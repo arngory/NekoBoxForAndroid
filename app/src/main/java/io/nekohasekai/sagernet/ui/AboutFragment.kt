@@ -28,6 +28,7 @@ import io.nekohasekai.sagernet.databinding.LayoutAboutBinding
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.plugin.PluginManager.loadString
 import io.nekohasekai.sagernet.utils.PackageCache
+import io.nekohasekai.sagernet.utils.isNewerVersion
 import io.nekohasekai.sagernet.widget.ListListener
 import libcore.Libcore
 import moe.matsuri.nb4a.plugin.Plugins
@@ -221,39 +222,34 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                         modernTLS()
                         trySocks5(DataStore.mixedPort, LOCAL_PROXY_USER, DataStore.localProxyPassword)
                     }
-                    val response = client.newRequest().apply {
-                        if (checkPreview) {
-                            // pre-releases are published from v* tags with a suffix, e.g. v1.5.1-beta.1
-                            setURL("https://api.github.com/repos/$RELEASE_REPO/releases?per_page=20")
-                        } else {
-                            setURL("https://api.github.com/repos/$RELEASE_REPO/releases/latest")
-                        }
-                    }.execute()
-                    val content = Util.getStringBox(response.contentString)
-                    val release = if (checkPreview) {
-                        val releases = JSONArray(content)
-                        (0 until releases.length()).map { releases.getJSONObject(it) }
-                            .firstOrNull { it.optBoolean("prerelease") && !it.optBoolean("draft") }
-                    } else {
-                        JSONObject(content)
+                    val content = try {
+                        client.newRequest().apply {
+                            if (checkPreview) {
+                                // pre-releases are published from v* tags with a suffix, e.g. v1.5.1-beta.1
+                                setURL("https://api.github.com/repos/$RELEASE_REPO/releases?per_page=20")
+                            } else {
+                                setURL("https://api.github.com/repos/$RELEASE_REPO/releases/latest")
+                            }
+                        }.execute().let { Util.getStringBox(it.contentString) }
+                    } catch (e: Exception) {
+                        // no release published yet
+                        if (e.message?.startsWith("HTTP 404") == true) null else throw e
                     }
-                    val releaseName = release?.optString("name").orEmpty()
+                    val release = when {
+                        content == null -> null
+                        checkPreview -> JSONArray(content).let { releases ->
+                            (0 until releases.length()).map { releases.getJSONObject(it) }
+                                .firstOrNull { it.optBoolean("prerelease") && !it.optBoolean("draft") }
+                        }
+
+                        else -> JSONObject(content)
+                    }
+                    val releaseTag = release?.optString("tag_name").orEmpty()
+                    val releaseName = release?.optString("name").orEmpty().ifBlank { releaseTag }
                     val releaseUrl = release?.optString("html_url").orEmpty()
-                    var haveUpdate = releaseName.isNotBlank() && releaseUrl.isNotBlank()
-                    haveUpdate = if (isPreview) {
-                        if (checkPreview) {
-                            haveUpdate && releaseName != BuildConfig.PRE_VERSION_NAME
-                        } else {
-                            // User: 1.3.9 pre-1.4.0 Stable: 1.3.9 -> No update
-                            haveUpdate && releaseName != BuildConfig.VERSION_NAME
-                        }
-                    } else {
-                        // User: 1.4.0 Preview: pre-1.4.0 -> No update
-                        // User: 1.4.0 Preview: pre-1.4.1 -> Update
-                        // User: 1.4.0 Stable: 1.4.0 -> No update
-                        // User: 1.4.0 Stable: 1.4.1 -> Update
-                        haveUpdate && !releaseName.contains(BuildConfig.VERSION_NAME)
-                    }
+                    // offer only strictly newer versions: a beta user is not sent back to stable
+                    val haveUpdate = releaseTag.isNotBlank() && releaseUrl.isNotBlank() &&
+                            isNewerVersion(releaseTag, BuildConfig.VERSION_NAME)
                     runOnMainDispatcher {
                         if (haveUpdate) {
                             val context = requireContext()
