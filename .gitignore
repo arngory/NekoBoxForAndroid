@@ -18,3 +18,8 @@ jniLibs/
 
 # submodules
 /external
+
+# release signing keys
+*.jks
+*.jks.b64
+*.keystore.b64

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/review-on-stop.sh",
+            "timeout": 1800,
+            "statusMessage": "Reviewing changes (opus[1m])..."
+          }
+        ]
+      }
+    ]
+  }
+}
