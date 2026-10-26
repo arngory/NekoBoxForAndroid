@@ -473,7 +473,9 @@ fun buildConfig(
                 // For external proxy software, their traffic must goes to v2ray-core to use protected fd.
                 bean.finalAddress = bean.serverAddress
                 bean.finalPort = bean.serverPort
-                if (knockTag != null && proxyEntity.needExternal() && !bean.canMapping()) {
+                // the knock outbound only sees plugin traffic that goes through the mapping inbound,
+                // the hysteria plugin always dials serverAddress:serverPorts itself
+                if (knockTag != null && proxyEntity.needExternal() && (bean is HysteriaBean || !bean.canMapping())) {
                     throw Exception("Port knocking (${bean.displayName()}): not supported for this plugin profile")
                 }
                 if (bean.canMapping() && proxyEntity.needExternal()) {
@@ -485,8 +487,7 @@ fun buildConfig(
                             else -> ""
                         }
                         if (Plugins.isUsingMatsuriExe(pluginId)) {
-                            // keep the mapping when knocking, the knock outbound has to dial the server
-                            needExternal = knockTag != null
+                            needExternal = false
                         } else if (Plugins.getPluginExternal(pluginId) != null) {
                             throw Exception("You are using an unsupported $pluginId, please download the correct plugin.")
                         }
