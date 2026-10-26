@@ -23,6 +23,7 @@ import com.danielstone.materialaboutlibrary.model.MaterialAboutCard
 import com.danielstone.materialaboutlibrary.model.MaterialAboutList
 import io.nekohasekai.sagernet.BuildConfig
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.RELEASE_REPO
 import io.nekohasekai.sagernet.databinding.LayoutAboutBinding
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.plugin.PluginManager.loadString
@@ -35,6 +36,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.database.DataStore
 import moe.matsuri.nb4a.utils.Util
+import org.json.JSONArray
 import org.json.JSONObject
 
 class AboutFragment : ToolbarFragment(R.layout.layout_about) {
@@ -84,7 +86,7 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                                 .subText(SagerNet.appVersionNameForDisplay)
                                 .setOnClickAction {
                                     requireContext().launchCustomTab(
-                                        "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases"
+                                        "https://github.com/$RELEASE_REPO/releases"
                                     )
                                 }
                                 .build())
@@ -221,15 +223,23 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                     }
                     val response = client.newRequest().apply {
                         if (checkPreview) {
-                            setURL("https://api.github.com/repos/MatsuriDayo/NekoBoxForAndroid/releases/tags/preview")
+                            // pre-releases are published from v* tags with a suffix, e.g. v1.5.1-beta.1
+                            setURL("https://api.github.com/repos/$RELEASE_REPO/releases?per_page=20")
                         } else {
-                            setURL("https://api.github.com/repos/MatsuriDayo/NekoBoxForAndroid/releases/latest")
+                            setURL("https://api.github.com/repos/$RELEASE_REPO/releases/latest")
                         }
                     }.execute()
-                    val release = JSONObject(Util.getStringBox(response.contentString))
-                    val releaseName = release.getString("name")
-                    val releaseUrl = release.getString("html_url")
-                    var haveUpdate = releaseName.isNotBlank()
+                    val content = Util.getStringBox(response.contentString)
+                    val release = if (checkPreview) {
+                        val releases = JSONArray(content)
+                        (0 until releases.length()).map { releases.getJSONObject(it) }
+                            .firstOrNull { it.optBoolean("prerelease") && !it.optBoolean("draft") }
+                    } else {
+                        JSONObject(content)
+                    }
+                    val releaseName = release?.optString("name").orEmpty()
+                    val releaseUrl = release?.optString("html_url").orEmpty()
+                    var haveUpdate = releaseName.isNotBlank() && releaseUrl.isNotBlank()
                     haveUpdate = if (isPreview) {
                         if (checkPreview) {
                             haveUpdate && releaseName != BuildConfig.PRE_VERSION_NAME

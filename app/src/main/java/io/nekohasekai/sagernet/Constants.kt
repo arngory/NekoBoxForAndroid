@@ -2,6 +2,9 @@ package io.nekohasekai.sagernet
 
 const val CONNECTION_TEST_URL = "http://cp.cloudflare.com/"
 
+// where the app looks for its own updates
+const val RELEASE_REPO = "arngory/NekoBoxForAndroid"
+
 object Key {
 
     const val DB_PUBLIC = "configuration.db"
