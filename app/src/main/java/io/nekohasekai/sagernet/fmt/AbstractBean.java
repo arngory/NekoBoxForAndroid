@@ -28,6 +28,7 @@ public abstract class AbstractBean extends Serializable {
     public String knockSequence;
     public Integer knockInterval; // ms
     public Integer knockTtl; // seconds
+    public Integer knockSilence; // seconds without a reply before one re-knock, 0 off
     // TLS fragmentation: 0 off, 1 TLS records, 2 TCP segments
     public Integer tlsFragment;
 
@@ -83,6 +84,7 @@ public abstract class AbstractBean extends Serializable {
         if (knockSequence == null) knockSequence = "";
         if (knockInterval == null) knockInterval = 200;
         if (knockTtl == null) knockTtl = 10;
+        if (knockSilence == null) knockSilence = 15;
         if (tlsFragment == null) tlsFragment = 0;
     }
 
@@ -93,7 +95,7 @@ public abstract class AbstractBean extends Serializable {
     public void serializeToBuffer(@NonNull ByteBufferOutput output) {
         serialize(output);
 
-        output.writeInt(2);
+        output.writeInt(3);
         if (!serializeWithoutName) {
             output.writeString(name);
         }
@@ -103,6 +105,7 @@ public abstract class AbstractBean extends Serializable {
         output.writeInt(knockInterval != null ? knockInterval : 200);
         output.writeInt(knockTtl != null ? knockTtl : 10);
         output.writeInt(tlsFragment != null ? tlsFragment : 0);
+        output.writeInt(knockSilence != null ? knockSilence : 15);
     }
 
     @Override
@@ -119,6 +122,9 @@ public abstract class AbstractBean extends Serializable {
             knockInterval = input.readInt();
             knockTtl = input.readInt();
             tlsFragment = input.readInt();
+        }
+        if (extraVersion >= 3) {
+            knockSilence = input.readInt();
         }
     }
 

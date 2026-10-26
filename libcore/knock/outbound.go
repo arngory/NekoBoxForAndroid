@@ -3,6 +3,10 @@
 // The outbound is used as the `detour` of a proxy outbound. Before dialing the
 // proxy server it sends a sequence of TCP SYNs / UDP datagrams to the same host,
 // so a knockd-style firewall opens the real port for this client.
+//
+// A knock is repeated when the session breaks: after a default network change
+// (new client address), when a dial fails on a cached knock, and once per
+// silence episode when a connection gets no reply for `silence` after sending.
 package knock
 
 import (
@@ -49,6 +53,9 @@ type Options struct {
 	Sequence []Step             `json:"sequence"`
 	Interval badoption.Duration `json:"interval,omitempty"`
 	TTL      badoption.Duration `json:"ttl,omitempty"`
+	// Silence re-knocks once when a connection gets no reply this long after
+	// sending. Zero disables it.
+	Silence badoption.Duration `json:"silence,omitempty"`
 }
 
 func Register(registry *outbound.Registry) {
@@ -61,9 +68,13 @@ type step struct {
 	payload []byte
 }
 
+// target is the knock state of one server address. The lock only guards the
+// fields; it is never held while knocking.
 type target struct {
-	access    sync.Mutex
-	lastKnock time.Time
+	access     sync.Mutex
+	lastKnock  time.Time
+	generation uint64
+	inflight   chan struct{}
 }
 
 var (
@@ -81,6 +92,10 @@ type Outbound struct {
 	steps          []step
 	interval       time.Duration
 	ttl            time.Duration
+	silence        time.Duration
+
+	// bumped on network changes, knocks of an older generation are stale
+	generation atomic.Uint64
 
 	access  sync.Mutex
 	targets map[string]*target
@@ -99,6 +114,10 @@ func New(ctx context.Context, router adapter.Router, logger log.ContextLogger, t
 	if ttl <= 0 {
 		ttl = defaultTTL
 	}
+	silence := time.Duration(options.Silence)
+	if silence < 0 {
+		silence = 0
+	}
 	// Without a detour the server address is resolved here, so that the knocks
 	// and the real connection go to the same IP.
 	outboundDialer, err := dialer.New(ctx, options.DialerOptions, false)
@@ -115,6 +134,7 @@ func New(ctx context.Context, router adapter.Router, logger log.ContextLogger, t
 		steps:          steps,
 		interval:       interval,
 		ttl:            ttl,
+		silence:        silence,
 		targets:        make(map[string]*target),
 	}, nil
 }
@@ -168,30 +188,30 @@ func (o *Outbound) DialContext(ctx context.Context, network string, destination 
 		return nil, err
 	}
 	conn, err := o.dialer.DialContext(ctx, network, destination)
-	if err == nil {
-		return conn, nil
+	if err != nil && !knocked {
+		// the cached knock may be stale (window closed, server restarted): knock and retry once
+		o.logger.DebugContext(ctx, "dial after cached knock failed, knocking again: ", err)
+		if _, knockErr := o.knock(ctx, destination, true); knockErr != nil {
+			return nil, err
+		}
+		conn, err = o.dialer.DialContext(ctx, network, destination)
 	}
-	if knocked {
+	if err != nil {
 		// the port may need a moment more, knock again on the next attempt
 		o.forget(destination)
 		return nil, err
 	}
-	// the cached knock may be stale (window closed, server restarted): knock and retry once
-	o.logger.DebugContext(ctx, "dial after cached knock failed, knocking again: ", err)
-	if _, knockErr := o.knock(ctx, destination, true); knockErr != nil {
-		return nil, err
-	}
-	conn, err = o.dialer.DialContext(ctx, network, destination)
-	if err != nil {
-		o.forget(destination)
-	}
-	return conn, err
+	return o.watchConn(conn, destination), nil
 }
 
 func (o *Outbound) ListenPacket(ctx context.Context, destination M.Socksaddr) (net.PacketConn, error) {
 	destination, err := o.resolve(ctx, destination)
 	if err != nil {
 		return nil, err
+	}
+	// e.g. multi-peer WireGuard listens on 0.0.0.0, there is nothing to knock at
+	if !knockable(destination) {
+		return o.dialer.ListenPacket(ctx, destination)
 	}
 	_, err = o.knock(ctx, destination, false)
 	if err != nil {
@@ -201,23 +221,24 @@ func (o *Outbound) ListenPacket(ctx context.Context, destination M.Socksaddr) (n
 	if err != nil {
 		return nil, err
 	}
-	return newSilenceConn(packetConn, o, destination), nil
+	if o.silence <= 0 {
+		return packetConn, nil
+	}
+	return &silentPacketConn{PacketConn: packetConn, watchdog: o.newWatchdog(destination)}, nil
 }
 
 // InterfaceUpdated is called when the default network changes. The server
-// only opened the port for the old client address, so forget every knock.
+// only opened the port for the old client address, so every knock is stale.
+// It must not block: sing-box calls it from ResetNetwork.
 func (o *Outbound) InterfaceUpdated(ctx context.Context) {
-	o.access.Lock()
-	targets := make([]*target, 0, len(o.targets))
-	for _, t := range o.targets {
-		targets = append(targets, t)
+	o.generation.Add(1)
+}
+
+func knockable(destination M.Socksaddr) bool {
+	if destination.Port == 0 {
+		return false
 	}
-	o.access.Unlock()
-	for _, t := range targets {
-		t.access.Lock()
-		t.lastKnock = time.Time{}
-		t.access.Unlock()
-	}
+	return destination.IsFqdn() || destination.Addr.IsValid() && !destination.Addr.IsUnspecified()
 }
 
 func (o *Outbound) resolve(ctx context.Context, destination M.Socksaddr) (M.Socksaddr, error) {
@@ -256,36 +277,70 @@ func (o *Outbound) forget(destination M.Socksaddr) {
 	t.access.Unlock()
 }
 
-// knock sends the sequence to the host unless it was knocked within ttl
-// (with force, unless it was knocked just now) and reports whether it did.
-// Concurrent dials to the same host wait for a single knock.
-func (o *Outbound) knock(ctx context.Context, destination M.Socksaddr, force bool) (bool, error) {
+// cached reports whether a knock to the host is still considered valid.
+func (o *Outbound) cached(destination M.Socksaddr) bool {
 	t := o.target(destination.AddrString())
 	t.access.Lock()
 	defer t.access.Unlock()
-	if !t.lastKnock.IsZero() {
-		since := time.Since(t.lastKnock)
-		if since < o.ttl && !force || since < minReknockGap {
-			return false, nil
+	return !t.lastKnock.IsZero() && t.generation == o.generation.Load() && time.Since(t.lastKnock) < o.ttl
+}
+
+// knock sends the sequence to the host unless a knock is still valid (with
+// force: unless it was sent just now) and reports whether it sent one.
+// Concurrent callers share one knock in flight.
+func (o *Outbound) knock(ctx context.Context, destination M.Socksaddr, force bool) (bool, error) {
+	t := o.target(destination.AddrString())
+	for {
+		t.access.Lock()
+		generation := o.generation.Load()
+		if !t.lastKnock.IsZero() && t.generation == generation {
+			since := time.Since(t.lastKnock)
+			if since < o.ttl && !force || since < minReknockGap {
+				t.access.Unlock()
+				return false, nil
+			}
+		}
+		if t.inflight == nil {
+			done := make(chan struct{})
+			t.inflight = done
+			t.access.Unlock()
+			err := o.sendSequence(ctx, destination)
+			t.access.Lock()
+			t.inflight = nil
+			if err == nil {
+				// a network change during the knock leaves it stale
+				t.lastKnock = time.Now()
+				t.generation = generation
+			}
+			t.access.Unlock()
+			close(done)
+			return err == nil, err
+		}
+		inflight := t.inflight
+		t.access.Unlock()
+		select {
+		case <-inflight:
+			// re-check: the knock may have failed or become stale
+			force = false
+		case <-ctx.Done():
+			return false, ctx.Err()
 		}
 	}
+}
+
+func (o *Outbound) sendSequence(ctx context.Context, destination M.Socksaddr) error {
 	o.logger.InfoContext(ctx, "knocking ", destination.AddrString(), " (", len(o.steps), " steps)")
 	for i, s := range o.steps {
 		if i > 0 {
 			err := sleep(ctx, o.interval)
 			if err != nil {
-				return false, err
+				return err
 			}
 		}
 		o.send(ctx, M.Socksaddr{Addr: destination.Addr, Fqdn: destination.Fqdn, Port: s.port}, s)
 	}
 	// give the firewall time to apply the rule before the real connection
-	err := sleep(ctx, o.interval)
-	if err != nil {
-		return false, err
-	}
-	t.lastKnock = time.Now()
-	return true, nil
+	return sleep(ctx, o.interval)
 }
 
 func (o *Outbound) send(ctx context.Context, destination M.Socksaddr, s step) {
@@ -329,43 +384,109 @@ func sleep(ctx context.Context, duration time.Duration) error {
 	}
 }
 
-// silenceConn re-knocks when a UDP session keeps sending but hears nothing
-// back for ttl, e.g. WireGuard after the server dropped its firewall state.
-// Long-lived UDP transports never dial again, so this is the only hook.
-type silenceConn struct {
-	net.PacketConn
+// watchdog re-knocks once when data was sent but nothing came back for
+// `silence`, then checks after another `silence` whether the server answers
+// again. It re-arms only after a reply, so a dead server is knocked once per
+// connection; reconnects knock on their own. Connections are never closed
+// here: a slow reply (long polling) must not break them.
+type watchdog struct {
 	outbound    *Outbound
 	destination M.Socksaddr
 	lastRead    atomic.Int64
-	knocking    atomic.Bool
+	pending     atomic.Bool
+	knocked     atomic.Bool
+	closed      atomic.Bool
 }
 
-func newSilenceConn(conn net.PacketConn, outbound *Outbound, destination M.Socksaddr) *silenceConn {
-	c := &silenceConn{PacketConn: conn, outbound: outbound, destination: destination}
-	c.lastRead.Store(time.Now().UnixNano())
-	return c
+func (o *Outbound) newWatchdog(destination M.Socksaddr) *watchdog {
+	w := &watchdog{outbound: o, destination: destination}
+	w.lastRead.Store(time.Now().UnixNano())
+	return w
 }
 
-func (c *silenceConn) ReadFrom(p []byte) (int, net.Addr, error) {
+func (w *watchdog) onRead() {
+	w.lastRead.Store(time.Now().UnixNano())
+	if w.knocked.CompareAndSwap(true, false) {
+		w.outbound.logger.Info("server ", w.destination.AddrString(), " answers again after re-knock")
+	}
+}
+
+func (w *watchdog) onWrite() {
+	if w.knocked.Load() || !w.pending.CompareAndSwap(false, true) {
+		return
+	}
+	sentAt := time.Now().UnixNano()
+	time.AfterFunc(w.outbound.silence, func() {
+		w.pending.Store(false)
+		if w.closed.Load() || w.lastRead.Load() >= sentAt || !w.knocked.CompareAndSwap(false, true) {
+			return
+		}
+		o := w.outbound
+		ctx, cancel := context.WithTimeout(o.ctx, o.interval*time.Duration(len(o.steps)+2)+5*time.Second)
+		defer cancel()
+		knocked, err := o.knock(ctx, w.destination, true)
+		if err != nil || !knocked {
+			return
+		}
+		o.logger.Warn("no reply from ", w.destination.AddrString(), " for ", o.silence, ", knocked again")
+		knockedAt := time.Now().UnixNano()
+		time.AfterFunc(o.silence, func() {
+			if !w.closed.Load() && w.lastRead.Load() < knockedAt {
+				o.logger.Warn("still no reply from ", w.destination.AddrString(), " after re-knock")
+			}
+		})
+	})
+}
+
+func (o *Outbound) watchConn(conn net.Conn, destination M.Socksaddr) net.Conn {
+	if o.silence <= 0 {
+		return conn
+	}
+	return &silentConn{Conn: conn, watchdog: o.newWatchdog(destination)}
+}
+
+type silentConn struct {
+	net.Conn
+	*watchdog
+}
+
+func (c *silentConn) Read(p []byte) (int, error) {
+	n, err := c.Conn.Read(p)
+	if n > 0 {
+		c.onRead()
+	}
+	return n, err
+}
+
+func (c *silentConn) Write(p []byte) (int, error) {
+	c.onWrite()
+	return c.Conn.Write(p)
+}
+
+func (c *silentConn) Close() error {
+	c.closed.Store(true)
+	return c.Conn.Close()
+}
+
+type silentPacketConn struct {
+	net.PacketConn
+	*watchdog
+}
+
+func (c *silentPacketConn) ReadFrom(p []byte) (int, net.Addr, error) {
 	n, addr, err := c.PacketConn.ReadFrom(p)
 	if err == nil {
-		c.lastRead.Store(time.Now().UnixNano())
+		c.onRead()
 	}
 	return n, addr, err
 }
 
-func (c *silenceConn) WriteTo(p []byte, addr net.Addr) (int, error) {
-	if time.Since(time.Unix(0, c.lastRead.Load())) > c.outbound.ttl && c.knocking.CompareAndSwap(false, true) {
-		go func() {
-			defer c.knocking.Store(false)
-			ctx, cancel := context.WithTimeout(c.outbound.ctx, c.outbound.interval*time.Duration(len(c.outbound.steps)+2)+time.Second)
-			defer cancel()
-			if knocked, _ := c.outbound.knock(ctx, c.destination, true); knocked {
-				c.outbound.logger.Info("no reply from ", c.destination.AddrString(), " for ", c.outbound.ttl, ", knocked again")
-				// wait another ttl for a reply before the next knock
-				c.lastRead.Store(time.Now().UnixNano())
-			}
-		}()
-	}
+func (c *silentPacketConn) WriteTo(p []byte, addr net.Addr) (int, error) {
+	c.onWrite()
 	return c.PacketConn.WriteTo(p, addr)
+}
+
+func (c *silentPacketConn) Close() error {
+	c.closed.Store(true)
+	return c.PacketConn.Close()
 }

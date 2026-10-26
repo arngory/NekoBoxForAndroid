@@ -246,39 +246,123 @@ func TestReknockWhenCachedDialFails(t *testing.T) {
 	if n := count(r.snapshot(), "knock"); n != 2 {
 		t.Fatalf("knocks: %d, want a second knock after the failed dial", n)
 	}
-	// that knock was fresh and the dial still failed, so the next dial knocks again
-	if !outbound.target(destination.AddrString()).lastKnock.IsZero() {
+	// the retry after a fresh knock failed too, so the next dial knocks again
+	if outbound.cached(destination) {
 		t.Fatal("failed dial after a fresh knock kept it cached")
 	}
 }
 
-func TestReknockOnUDPSilence(t *testing.T) {
-	r := &recorder{}
-	knockPort := listenTCP(t, r, "knock")
+// silentUDP is a server that receives but never answers.
+func silentUDP(t *testing.T) M.Socksaddr {
 	silent, err := net.ListenPacket("udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer silent.Close()
+	t.Cleanup(func() { silent.Close() })
+	go func() {
+		buffer := make([]byte, 2048)
+		for {
+			if _, _, err := silent.ReadFrom(buffer); err != nil {
+				return
+			}
+		}
+	}()
+	return M.SocksaddrFromNet(silent.LocalAddr())
+}
+
+func newSilenceBox(t *testing.T, r *recorder) *Outbound {
+	knockPort := listenTCP(t, r, "knock")
 	outbound := newBox(t, Options{Sequence: []Step{{Port: knockPort}}})
 	outbound.interval = 20 * time.Millisecond
-	outbound.ttl = 200 * time.Millisecond
-	destination := M.SocksaddrFromNet(silent.LocalAddr())
+	outbound.ttl = time.Minute
+	outbound.silence = 150 * time.Millisecond
+	return outbound
+}
+
+func TestReknockOnSilencePacketConn(t *testing.T) {
+	r := &recorder{}
+	outbound := newSilenceBox(t, r)
+	destination := silentUDP(t)
 	packetConn, err := outbound.ListenPacket(context.Background(), destination)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer packetConn.Close()
 	outbound.target(destination.AddrString()).lastKnock = time.Now().Add(-minReknockGap)
-	if _, err = packetConn.WriteTo([]byte("x"), destination.UDPAddr()); err != nil {
+	for i := 0; i < 6; i++ {
+		if _, err = packetConn.WriteTo([]byte("x"), destination.UDPAddr()); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	time.Sleep(100 * time.Millisecond)
+	// one knock on dial, one re-knock for the silence episode, not one per write
+	if n := count(r.snapshot(), "knock"); n != 2 {
+		t.Fatalf("knocks: %d, want exactly one re-knock", n)
+	}
+}
+
+// WireGuard with one peer dials its UDP socket instead of listening.
+func TestReknockOnSilenceDialedUDP(t *testing.T) {
+	r := &recorder{}
+	outbound := newSilenceBox(t, r)
+	destination := silentUDP(t)
+	conn, err := outbound.DialContext(context.Background(), N.NetworkUDP, destination)
+	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(300 * time.Millisecond)
-	if _, err = packetConn.WriteTo([]byte("x"), destination.UDPAddr()); err != nil {
+	defer conn.Close()
+	outbound.target(destination.AddrString()).lastKnock = time.Now().Add(-minReknockGap)
+	if _, err = conn.Write([]byte("handshake")); err != nil {
 		t.Fatal(err)
+	}
+	time.Sleep(400 * time.Millisecond)
+	if n := count(r.snapshot(), "knock"); n != 2 {
+		t.Fatalf("knocks: %d, want a re-knock for the dialed UDP session", n)
+	}
+}
+
+func TestNoReknockWhenServerAnswers(t *testing.T) {
+	r := &recorder{}
+	outbound := newSilenceBox(t, r)
+	server := listenTCP(t, r, "server")
+	conn, err := outbound.DialContext(context.Background(), N.NetworkTCP, M.ParseSocksaddrHostPort("127.0.0.1", server))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	buffer := make([]byte, 4)
+	for i := 0; i < 4; i++ {
+		if _, err = conn.Write([]byte("ping")); err != nil {
+			t.Fatal(err)
+		}
+		if _, err = io.ReadFull(conn, buffer); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 	time.Sleep(200 * time.Millisecond)
-	if n := count(r.snapshot(), "knock"); n != 2 {
-		t.Fatalf("knocks: %d, want a re-knock after silence", n)
+	if n := count(r.snapshot(), "knock"); n != 1 {
+		t.Fatalf("knocks: %d, an echoing server must not be re-knocked", n)
+	}
+}
+
+func TestNetworkChangeDoesNotBlock(t *testing.T) {
+	r := &recorder{}
+	knockPort := listenTCP(t, r, "knock")
+	outbound := newBox(t, Options{Sequence: []Step{{Port: knockPort}, {Port: knockPort}}})
+	outbound.interval = 300 * time.Millisecond
+	destination := M.ParseSocksaddrHostPort("127.0.0.1", knockPort)
+	go outbound.knock(context.Background(), destination, false)
+	time.Sleep(50 * time.Millisecond)
+	start := time.Now()
+	outbound.InterfaceUpdated(context.Background())
+	if elapsed := time.Since(start); elapsed > 50*time.Millisecond {
+		t.Fatalf("InterfaceUpdated waited %v for a knock in flight", elapsed)
+	}
+	time.Sleep(700 * time.Millisecond)
+	// the knock started before the change must not count for the new network
+	if outbound.cached(destination) {
+		t.Fatal("knock from before the network change is still cached")
 	}
 }

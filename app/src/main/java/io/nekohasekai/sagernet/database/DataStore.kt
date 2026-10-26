@@ -261,6 +261,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var serverKnockSequence by profileCacheStore.string(Key.SERVER_KNOCK_SEQUENCE)
     var serverKnockInterval by profileCacheStore.stringToInt(Key.SERVER_KNOCK_INTERVAL) { 200 }
     var serverKnockTtl by profileCacheStore.stringToInt(Key.SERVER_KNOCK_TTL) { 10 }
+    var serverKnockSilence by profileCacheStore.stringToInt(Key.SERVER_KNOCK_SILENCE) { 15 }
     var serverTlsFragment by profileCacheStore.stringToInt(Key.SERVER_TLS_FRAGMENT)
 
     var groupName by profileCacheStore.string(Key.GROUP_NAME)

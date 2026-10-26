@@ -104,6 +104,7 @@ object Key {
     const val SERVER_KNOCK_SEQUENCE = "serverKnockSequence"
     const val SERVER_KNOCK_INTERVAL = "serverKnockInterval"
     const val SERVER_KNOCK_TTL = "serverKnockTtl"
+    const val SERVER_KNOCK_SILENCE = "serverKnockSilence"
     const val SERVER_TLS_FRAGMENT = "serverTlsFragment"
 
     const val SERVER_SECURITY_CATEGORY = "serverSecurityCategory"

@@ -93,6 +93,18 @@
                 android:inputType="number" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/port_knocking_silence">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/knock_silence"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <TextView
             style="?android:attr/textAppearanceSmall"
             android:layout_width="match_parent"

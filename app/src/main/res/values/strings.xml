@@ -590,10 +590,11 @@
     <string name="port_knocking_sequence">Knock sequence, e.g. 7000, 8000/udp, 9000</string>
     <string name="port_knocking_interval">Delay between knocks, ms</string>
     <string name="port_knocking_ttl">Knock again after, seconds</string>
-    <string name="port_knocking_summary">Before connecting, sends TCP SYNs or UDP datagrams to these ports of the server, in order. UDP steps may carry a hex payload: 1234/udp:68656c6c6f. Knocks again after the network changes, when a connection fails, and when a UDP session gets no reply for the re-knock interval. Leave empty to disable.</string>
+    <string name="port_knocking_summary">Before connecting, sends TCP SYNs or UDP datagrams to these ports of the server, in order. UDP steps may carry a hex payload: 1234/udp:68656c6c6f. Knocks again after a network change and when a connection fails. If a connection gets no reply for the silence timeout after sending, knocks once more and logs whether the server answers again. Leave the sequence empty to disable.</string>
     <string name="port_knocking_invalid">Invalid knock sequence: %s</string>
     <string name="local_proxy_username">Local proxy user name</string>
     <string name="local_proxy_password">Local proxy password</string>
     <string name="local_proxy_no_auth_in_vpn">Local proxy without password in VPN mode</string>
     <string name="local_proxy_no_auth_in_vpn_sum">Unsafe: any app on the device can use the local proxy and learn the server address. Needed for the system HTTP proxy option.</string>
+    <string name="port_knocking_silence">Re-knock if the server is silent, seconds (0 = off)</string>
 </resources>

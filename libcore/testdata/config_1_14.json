@@ -118,7 +118,8 @@
    "domain_resolver": {
     "server": "dns-direct",
     "strategy": "prefer_ipv4"
-   }
+   },
+   "silence": "15s"
   },
   {
    "type": "direct",

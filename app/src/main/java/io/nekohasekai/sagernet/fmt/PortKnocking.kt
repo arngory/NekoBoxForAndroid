@@ -52,5 +52,6 @@ fun AbstractBean.buildKnockOutboundOptions(): Map<String, Any> {
         },
         "interval" to "${(knockInterval ?: 200).coerceIn(10, 10_000)}ms",
         "ttl" to "${(knockTtl ?: 10).coerceIn(1, 3600)}s",
+        "silence" to "${(knockSilence ?: 15).coerceIn(0, 3600)}s",
     )
 }

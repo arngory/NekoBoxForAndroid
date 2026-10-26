@@ -173,6 +173,7 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         DataStore.serverKnockSequence = knockSequence
         DataStore.serverKnockInterval = knockInterval
         DataStore.serverKnockTtl = knockTtl
+        DataStore.serverKnockSilence = knockSilence
         DataStore.serverTlsFragment = tlsFragment
     }
 
@@ -180,6 +181,7 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         knockSequence = DataStore.serverKnockSequence.trim()
         knockInterval = DataStore.serverKnockInterval
         knockTtl = DataStore.serverKnockTtl
+        knockSilence = DataStore.serverKnockSilence
         tlsFragment = DataStore.serverTlsFragment
     }
 
@@ -195,6 +197,7 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         binding.knockSequence.setText(DataStore.serverKnockSequence)
         binding.knockInterval.setText(DataStore.serverKnockInterval.toString())
         binding.knockTtl.setText(DataStore.serverKnockTtl.toString())
+        binding.knockSilence.setText(DataStore.serverKnockSilence.toString())
         val dialog = MaterialAlertDialogBuilder(this).setTitle(R.string.connection_tweaks)
             .setView(binding.root)
             .setPositiveButton(android.R.string.ok, null)
@@ -218,6 +221,8 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
                 binding.knockInterval.text.toString().toIntOrNull()?.coerceIn(10, 10_000) ?: 200
             DataStore.serverKnockTtl =
                 binding.knockTtl.text.toString().toIntOrNull()?.coerceIn(1, 3600) ?: 10
+            DataStore.serverKnockSilence =
+                binding.knockSilence.text.toString().toIntOrNull()?.coerceIn(0, 3600) ?: 15
             dialog.dismiss()
         }
     }

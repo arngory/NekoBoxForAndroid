@@ -168,6 +168,7 @@ object RawUpdater : GroupUpdater() {
                 bean.knockSequence = existsBean.knockSequence
                 bean.knockInterval = existsBean.knockInterval
                 bean.knockTtl = existsBean.knockTtl
+                bean.knockSilence = existsBean.knockSilence
                 bean.tlsFragment = existsBean.tlsFragment
                 when {
                     existsBean != bean -> {
