@@ -133,7 +133,7 @@ jobs:
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           [ -n "$KEYSTORE_FILE" ] || unset KEYSTORE_PASS ALIAS_NAME ALIAS_PASS
           ./run init action gradle
-          ./gradlew --no-daemon app:assembleOssRelease
+          ./gradlew --no-daemon app:testOssReleaseUnitTest app:assembleOssRelease
 
       - name: Collect APKs
         run: |
