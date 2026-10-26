@@ -11,6 +11,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/sagernet/sing-box/adapter"
@@ -33,6 +34,8 @@ const (
 	defaultInterval = 200 * time.Millisecond
 	defaultTTL      = 10 * time.Second
 	maxPayload      = 1024
+	// lower bound between forced knocks to the same host
+	minReknockGap = 2 * time.Second
 )
 
 type Step struct {
@@ -63,7 +66,10 @@ type target struct {
 	lastKnock time.Time
 }
 
-var _ adapter.Outbound = (*Outbound)(nil)
+var (
+	_ adapter.Outbound                = (*Outbound)(nil)
+	_ adapter.InterfaceUpdateListener = (*Outbound)(nil)
+)
 
 type Outbound struct {
 	outbound.Adapter
@@ -157,11 +163,29 @@ func (o *Outbound) DialContext(ctx context.Context, network string, destination 
 	if err != nil {
 		return nil, err
 	}
-	err = o.knock(ctx, destination)
+	knocked, err := o.knock(ctx, destination, false)
 	if err != nil {
 		return nil, err
 	}
-	return o.dialer.DialContext(ctx, network, destination)
+	conn, err := o.dialer.DialContext(ctx, network, destination)
+	if err == nil {
+		return conn, nil
+	}
+	if knocked {
+		// the port may need a moment more, knock again on the next attempt
+		o.forget(destination)
+		return nil, err
+	}
+	// the cached knock may be stale (window closed, server restarted): knock and retry once
+	o.logger.DebugContext(ctx, "dial after cached knock failed, knocking again: ", err)
+	if _, knockErr := o.knock(ctx, destination, true); knockErr != nil {
+		return nil, err
+	}
+	conn, err = o.dialer.DialContext(ctx, network, destination)
+	if err != nil {
+		o.forget(destination)
+	}
+	return conn, err
 }
 
 func (o *Outbound) ListenPacket(ctx context.Context, destination M.Socksaddr) (net.PacketConn, error) {
@@ -169,11 +193,31 @@ func (o *Outbound) ListenPacket(ctx context.Context, destination M.Socksaddr) (n
 	if err != nil {
 		return nil, err
 	}
-	err = o.knock(ctx, destination)
+	_, err = o.knock(ctx, destination, false)
 	if err != nil {
 		return nil, err
 	}
-	return o.dialer.ListenPacket(ctx, destination)
+	packetConn, err := o.dialer.ListenPacket(ctx, destination)
+	if err != nil {
+		return nil, err
+	}
+	return newSilenceConn(packetConn, o, destination), nil
+}
+
+// InterfaceUpdated is called when the default network changes. The server
+// only opened the port for the old client address, so forget every knock.
+func (o *Outbound) InterfaceUpdated(ctx context.Context) {
+	o.access.Lock()
+	targets := make([]*target, 0, len(o.targets))
+	for _, t := range o.targets {
+		targets = append(targets, t)
+	}
+	o.access.Unlock()
+	for _, t := range targets {
+		t.access.Lock()
+		t.lastKnock = time.Time{}
+		t.access.Unlock()
+	}
 }
 
 func (o *Outbound) resolve(ctx context.Context, destination M.Socksaddr) (M.Socksaddr, error) {
@@ -205,21 +249,32 @@ func (o *Outbound) target(host string) *target {
 	return t
 }
 
-// knock sends the sequence to the host unless it was knocked within ttl.
+func (o *Outbound) forget(destination M.Socksaddr) {
+	t := o.target(destination.AddrString())
+	t.access.Lock()
+	t.lastKnock = time.Time{}
+	t.access.Unlock()
+}
+
+// knock sends the sequence to the host unless it was knocked within ttl
+// (with force, unless it was knocked just now) and reports whether it did.
 // Concurrent dials to the same host wait for a single knock.
-func (o *Outbound) knock(ctx context.Context, destination M.Socksaddr) error {
+func (o *Outbound) knock(ctx context.Context, destination M.Socksaddr, force bool) (bool, error) {
 	t := o.target(destination.AddrString())
 	t.access.Lock()
 	defer t.access.Unlock()
-	if !t.lastKnock.IsZero() && time.Since(t.lastKnock) < o.ttl {
-		return nil
+	if !t.lastKnock.IsZero() {
+		since := time.Since(t.lastKnock)
+		if since < o.ttl && !force || since < minReknockGap {
+			return false, nil
+		}
 	}
 	o.logger.InfoContext(ctx, "knocking ", destination.AddrString(), " (", len(o.steps), " steps)")
 	for i, s := range o.steps {
 		if i > 0 {
 			err := sleep(ctx, o.interval)
 			if err != nil {
-				return err
+				return false, err
 			}
 		}
 		o.send(ctx, M.Socksaddr{Addr: destination.Addr, Fqdn: destination.Fqdn, Port: s.port}, s)
@@ -227,10 +282,10 @@ func (o *Outbound) knock(ctx context.Context, destination M.Socksaddr) error {
 	// give the firewall time to apply the rule before the real connection
 	err := sleep(ctx, o.interval)
 	if err != nil {
-		return err
+		return false, err
 	}
 	t.lastKnock = time.Now()
-	return nil
+	return true, nil
 }
 
 func (o *Outbound) send(ctx context.Context, destination M.Socksaddr, s step) {
@@ -272,4 +327,45 @@ func sleep(ctx context.Context, duration time.Duration) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+// silenceConn re-knocks when a UDP session keeps sending but hears nothing
+// back for ttl, e.g. WireGuard after the server dropped its firewall state.
+// Long-lived UDP transports never dial again, so this is the only hook.
+type silenceConn struct {
+	net.PacketConn
+	outbound    *Outbound
+	destination M.Socksaddr
+	lastRead    atomic.Int64
+	knocking    atomic.Bool
+}
+
+func newSilenceConn(conn net.PacketConn, outbound *Outbound, destination M.Socksaddr) *silenceConn {
+	c := &silenceConn{PacketConn: conn, outbound: outbound, destination: destination}
+	c.lastRead.Store(time.Now().UnixNano())
+	return c
+}
+
+func (c *silenceConn) ReadFrom(p []byte) (int, net.Addr, error) {
+	n, addr, err := c.PacketConn.ReadFrom(p)
+	if err == nil {
+		c.lastRead.Store(time.Now().UnixNano())
+	}
+	return n, addr, err
+}
+
+func (c *silenceConn) WriteTo(p []byte, addr net.Addr) (int, error) {
+	if time.Since(time.Unix(0, c.lastRead.Load())) > c.outbound.ttl && c.knocking.CompareAndSwap(false, true) {
+		go func() {
+			defer c.knocking.Store(false)
+			ctx, cancel := context.WithTimeout(c.outbound.ctx, c.outbound.interval*time.Duration(len(c.outbound.steps)+2)+time.Second)
+			defer cancel()
+			if knocked, _ := c.outbound.knock(ctx, c.destination, true); knocked {
+				c.outbound.logger.Info("no reply from ", c.destination.AddrString(), " for ", c.outbound.ttl, ", knocked again")
+				// wait another ttl for a reply before the next knock
+				c.lastRead.Store(time.Now().UnixNano())
+			}
+		}()
+	}
+	return c.PacketConn.WriteTo(p, addr)
 }

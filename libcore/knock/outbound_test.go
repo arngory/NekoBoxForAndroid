@@ -185,3 +185,100 @@ func TestParseSequence(t *testing.T) {
 		t.Fatalf("unexpected steps: %+v", steps)
 	}
 }
+
+func count(events []string, name string) int {
+	n := 0
+	for _, event := range events {
+		if event == name {
+			n++
+		}
+	}
+	return n
+}
+
+func TestReknockAfterNetworkChange(t *testing.T) {
+	r := &recorder{}
+	knockPort := listenTCP(t, r, "knock")
+	server := listenTCP(t, r, "server")
+	outbound := newBox(t, Options{Sequence: []Step{{Port: knockPort}}})
+	outbound.interval = 20 * time.Millisecond
+	outbound.ttl = time.Minute
+	destination := M.ParseSocksaddrHostPort("127.0.0.1", server)
+	ctx := context.Background()
+	for i := 0; i < 2; i++ {
+		conn, err := outbound.DialContext(ctx, N.NetworkTCP, destination)
+		if err != nil {
+			t.Fatal(err)
+		}
+		conn.Close()
+		if i == 0 {
+			outbound.InterfaceUpdated(ctx)
+		}
+	}
+	time.Sleep(100 * time.Millisecond)
+	if n := count(r.snapshot(), "knock"); n != 2 {
+		t.Fatalf("knocks after network change: %d, want 2", n)
+	}
+}
+
+func TestReknockWhenCachedDialFails(t *testing.T) {
+	r := &recorder{}
+	knockPort := listenTCP(t, r, "knock")
+	outbound := newBox(t, Options{Sequence: []Step{{Port: knockPort}}})
+	outbound.interval = 20 * time.Millisecond
+	outbound.ttl = time.Minute
+	// a closed port: the dial fails although a knock is cached
+	closed, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	destination := M.ParseSocksaddrHostPort("127.0.0.1", uint16(closed.Addr().(*net.TCPAddr).Port))
+	closed.Close()
+	ctx := context.Background()
+	if _, err = outbound.knock(ctx, destination, false); err != nil {
+		t.Fatal(err)
+	}
+	outbound.target(destination.AddrString()).lastKnock = time.Now().Add(-minReknockGap)
+	if _, err = outbound.DialContext(ctx, N.NetworkTCP, destination); err == nil {
+		t.Fatal("dial to a closed port succeeded")
+	}
+	time.Sleep(100 * time.Millisecond)
+	if n := count(r.snapshot(), "knock"); n != 2 {
+		t.Fatalf("knocks: %d, want a second knock after the failed dial", n)
+	}
+	// that knock was fresh and the dial still failed, so the next dial knocks again
+	if !outbound.target(destination.AddrString()).lastKnock.IsZero() {
+		t.Fatal("failed dial after a fresh knock kept it cached")
+	}
+}
+
+func TestReknockOnUDPSilence(t *testing.T) {
+	r := &recorder{}
+	knockPort := listenTCP(t, r, "knock")
+	silent, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer silent.Close()
+	outbound := newBox(t, Options{Sequence: []Step{{Port: knockPort}}})
+	outbound.interval = 20 * time.Millisecond
+	outbound.ttl = 200 * time.Millisecond
+	destination := M.SocksaddrFromNet(silent.LocalAddr())
+	packetConn, err := outbound.ListenPacket(context.Background(), destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer packetConn.Close()
+	outbound.target(destination.AddrString()).lastKnock = time.Now().Add(-minReknockGap)
+	if _, err = packetConn.WriteTo([]byte("x"), destination.UDPAddr()); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(300 * time.Millisecond)
+	if _, err = packetConn.WriteTo([]byte("x"), destination.UDPAddr()); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(200 * time.Millisecond)
+	if n := count(r.snapshot(), "knock"); n != 2 {
+		t.Fatalf("knocks: %d, want a re-knock after silence", n)
+	}
+}

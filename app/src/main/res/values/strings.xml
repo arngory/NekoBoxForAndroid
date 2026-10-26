@@ -590,7 +590,7 @@
     <string name="port_knocking_sequence">Knock sequence, e.g. 7000, 8000/udp, 9000</string>
     <string name="port_knocking_interval">Delay between knocks, ms</string>
     <string name="port_knocking_ttl">Knock again after, seconds</string>
-    <string name="port_knocking_summary">Before connecting, sends TCP SYNs or UDP datagrams to these ports of the server, in order. UDP steps may carry a hex payload: 1234/udp:68656c6c6f. Leave empty to disable.</string>
+    <string name="port_knocking_summary">Before connecting, sends TCP SYNs or UDP datagrams to these ports of the server, in order. UDP steps may carry a hex payload: 1234/udp:68656c6c6f. Knocks again after the network changes, when a connection fails, and when a UDP session gets no reply for the re-knock interval. Leave empty to disable.</string>
     <string name="port_knocking_invalid">Invalid knock sequence: %s</string>
     <string name="local_proxy_username">Local proxy user name</string>
     <string name="local_proxy_password">Local proxy password</string>
