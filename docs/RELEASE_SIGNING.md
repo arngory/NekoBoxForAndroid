@@ -9,15 +9,15 @@
 
 ```bash
 keytool -genkeypair -v \
-  -keystore nekobox-release.jks -storetype PKCS12 \
-  -alias nekobox -keyalg RSA -keysize 4096 -validity 10000 \
-  -dname "CN=NekoBox fork"
+  -keystore niko-release.jks -storetype PKCS12 \
+  -alias niko -keyalg RSA -keysize 4096 -validity 10000 \
+  -dname "CN=niko"
 ```
 
 `keytool` спросит пароль. В PKCS12 пароль хранилища и пароль ключа совпадают, поэтому
 `KEYSTORE_PASS` и `ALIAS_PASS` ниже будут одинаковыми.
 
-**Сразу сделай резервную копию** `nekobox-release.jks` и пароля (менеджер паролей, офлайн-носитель).
+**Сразу сделай резервную копию** `niko-release.jks` и пароля (менеджер паролей, офлайн-носитель).
 Без этого ключа обновления не встанут поверх уже установленного приложения: придётся удалять
 приложение с потерей настроек и выпускать его заново с новым ключом.
 
@@ -25,7 +25,7 @@ keytool -genkeypair -v \
 могли сверить):
 
 ```bash
-keytool -list -v -keystore nekobox-release.jks -alias nekobox | grep SHA256
+keytool -list -v -keystore niko-release.jks -alias niko | grep SHA256
 ```
 
 ## 2. Положить ключ в секреты GitHub
@@ -33,29 +33,29 @@ keytool -list -v -keystore nekobox-release.jks -alias nekobox | grep SHA256
 Закодировать хранилище в base64 одной строкой:
 
 ```bash
-base64 -w0 nekobox-release.jks > nekobox-release.jks.b64   # Linux
-base64 -i nekobox-release.jks -o nekobox-release.jks.b64   # macOS
+base64 -w0 niko-release.jks > niko-release.jks.b64   # Linux
+base64 -i niko-release.jks -o niko-release.jks.b64   # macOS
 ```
 
 В репозитории: **Settings → Secrets and variables → Actions → New repository secret**. Создать четыре секрета:
 
 | Секрет | Значение |
 |---|---|
-| `KEYSTORE_BASE64` | содержимое `nekobox-release.jks.b64` |
+| `KEYSTORE_BASE64` | содержимое `niko-release.jks.b64` |
 | `KEYSTORE_PASS` | пароль хранилища |
-| `ALIAS_NAME` | `nekobox` (alias из шага 1) |
+| `ALIAS_NAME` | `niko` (alias из шага 1) |
 | `ALIAS_PASS` | пароль ключа (для PKCS12 тот же, что `KEYSTORE_PASS`) |
 
 То же самое через `gh`:
 
 ```bash
-gh secret set KEYSTORE_BASE64 < nekobox-release.jks.b64
+gh secret set KEYSTORE_BASE64 < niko-release.jks.b64
 gh secret set KEYSTORE_PASS
-gh secret set ALIAS_NAME --body nekobox
+gh secret set ALIAS_NAME --body niko
 gh secret set ALIAS_PASS
 ```
 
-После этого удали `nekobox-release.jks.b64`: это тот же ключ, только в другой кодировке.
+После этого удали `niko-release.jks.b64`: это тот же ключ, только в другой кодировке.
 
 ## 3. Выпустить релиз
 
@@ -80,9 +80,9 @@ Workflow проверит, что тег совпадает с `VERSION_NAME`, �
 В `local.properties` (он в `.gitignore`):
 
 ```properties
-KEYSTORE_FILE=/абсолютный/путь/nekobox-release.jks
+KEYSTORE_FILE=/абсолютный/путь/niko-release.jks
 KEYSTORE_PASS=...
-ALIAS_NAME=nekobox
+ALIAS_NAME=niko
 ALIAS_PASS=...
 ```
 
