@@ -110,6 +110,8 @@ jobs:
       - name: Signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          ALIAS_NAME: ${{ secrets.ALIAS_NAME }}
           REQUIRE_SIGNING: ${{ inputs.require-signing }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
@@ -122,6 +124,13 @@ jobs:
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          # fail early with the aliases that do exist instead of a packaging error
+          if ! keytool -list -keystore "$RUNNER_TEMP/release.keystore" -storepass "$KEYSTORE_PASS" \
+              -alias "$(printf '%s' "$ALIAS_NAME" | xargs)" > /dev/null 2>&1; then
+            echo "::error::alias from ALIAS_NAME not found in the keystore (or KEYSTORE_PASS is wrong). Aliases present:"
+            keytool -list -keystore "$RUNNER_TEMP/release.keystore" -storepass "$KEYSTORE_PASS" | grep -i 'entry' || true
+            exit 1
+          fi
 
       - name: Gradle build
         env:

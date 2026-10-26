@@ -117,7 +117,7 @@ fun Project.setupAppCommon() {
 
     val lp = requireLocalProperties()
     val keystorePwd = lp.getProperty("KEYSTORE_PASS") ?: System.getenv("KEYSTORE_PASS")
-    val alias = lp.getProperty("ALIAS_NAME") ?: System.getenv("ALIAS_NAME")
+    val alias = (lp.getProperty("ALIAS_NAME") ?: System.getenv("ALIAS_NAME"))?.trim()
     val pwd = lp.getProperty("ALIAS_PASS") ?: System.getenv("ALIAS_PASS")
     val keystoreFile = lp.getProperty("KEYSTORE_FILE") ?: System.getenv("KEYSTORE_FILE")
 
