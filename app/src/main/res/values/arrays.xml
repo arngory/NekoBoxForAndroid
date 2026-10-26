@@ -524,6 +524,12 @@
         <item>3</item>
     </string-array>
 
+    <string-array name="tls_fragment_values">
+        <item>@string/off</item>
+        <item>@string/tls_fragment_record</item>
+        <item>@string/tls_fragment_tcp</item>
+    </string-array>
+
     <string-array name="traffic_sniffing_values">
         <item>@string/off</item>
         <item>@string/sniff_routing</item>

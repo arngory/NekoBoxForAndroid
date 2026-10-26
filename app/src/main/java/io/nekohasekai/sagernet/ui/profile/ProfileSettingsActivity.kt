@@ -35,8 +35,11 @@ import io.nekohasekai.sagernet.database.GroupManager
 import io.nekohasekai.sagernet.database.ProfileManager
 import io.nekohasekai.sagernet.database.SagerDatabase
 import io.nekohasekai.sagernet.database.preference.OnPreferenceDataStoreChangeListener
+import io.nekohasekai.sagernet.databinding.LayoutConnectionTweaksBinding
 import io.nekohasekai.sagernet.databinding.LayoutGroupItemBinding
 import io.nekohasekai.sagernet.fmt.AbstractBean
+import io.nekohasekai.sagernet.fmt.internal.ChainBean
+import io.nekohasekai.sagernet.fmt.parseKnockSequence
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.ui.ThemedActivity
 import io.nekohasekai.sagernet.widget.ListListener
@@ -106,7 +109,10 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
             runOnDefaultDispatcher {
                 if (editingId == 0L) {
                     DataStore.editingGroup = DataStore.selectedGroupForImport()
-                    createEntity().applyDefaultValues().init()
+                    createEntity().applyDefaultValues().apply {
+                        init()
+                        loadConnectionTweaks()
+                    }
                 } else {
                     if (proxyEntity == null) {
                         onMainDispatcher {
@@ -115,7 +121,10 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
                         return@runOnDefaultDispatcher
                     }
                     DataStore.editingGroup = proxyEntity!!.groupId
-                    (proxyEntity!!.requireBean() as T).init()
+                    (proxyEntity!!.requireBean() as T).apply {
+                        init()
+                        loadConnectionTweaks()
+                    }
                 }
 
                 onMainDispatcher {
@@ -135,7 +144,10 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         val editingId = DataStore.editingId
         if (editingId == 0L) {
             val editingGroup = DataStore.editingGroup
-            ProfileManager.createProfile(editingGroup, createEntity().apply { serialize() })
+            ProfileManager.createProfile(editingGroup, createEntity().apply {
+                serialize()
+                saveConnectionTweaks()
+            })
         } else {
             if (proxyEntity == null) {
                 finish()
@@ -144,10 +156,70 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
             if (proxyEntity!!.id == DataStore.selectedProxy) {
                 SagerNet.stopService()
             }
-            ProfileManager.updateProfile(proxyEntity!!.apply { (requireBean() as T).serialize() })
+            ProfileManager.updateProfile(proxyEntity!!.apply {
+                (requireBean() as T).apply {
+                    serialize()
+                    saveConnectionTweaks()
+                }
+            })
         }
         finish()
 
+    }
+
+    // port knocking and TLS fragmentation are shared by every profile type
+
+    private fun AbstractBean.loadConnectionTweaks() {
+        DataStore.serverKnockSequence = knockSequence
+        DataStore.serverKnockInterval = knockInterval
+        DataStore.serverKnockTtl = knockTtl
+        DataStore.serverTlsFragment = tlsFragment
+    }
+
+    private fun AbstractBean.saveConnectionTweaks() {
+        knockSequence = DataStore.serverKnockSequence.trim()
+        knockInterval = DataStore.serverKnockInterval
+        knockTtl = DataStore.serverKnockTtl
+        tlsFragment = DataStore.serverTlsFragment
+    }
+
+    fun showConnectionTweaksDialog() {
+        val binding = LayoutConnectionTweaksBinding.inflate(layoutInflater)
+        binding.tlsFragment.check(
+            when (DataStore.serverTlsFragment) {
+                1 -> R.id.tls_fragment_record
+                2 -> R.id.tls_fragment_tcp
+                else -> R.id.tls_fragment_off
+            }
+        )
+        binding.knockSequence.setText(DataStore.serverKnockSequence)
+        binding.knockInterval.setText(DataStore.serverKnockInterval.toString())
+        binding.knockTtl.setText(DataStore.serverKnockTtl.toString())
+        val dialog = MaterialAlertDialogBuilder(this).setTitle(R.string.connection_tweaks)
+            .setView(binding.root)
+            .setPositiveButton(android.R.string.ok, null)
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val sequence = binding.knockSequence.text.toString().trim()
+            try {
+                parseKnockSequence(sequence)
+            } catch (e: IllegalArgumentException) {
+                binding.knockSequence.error = getString(R.string.port_knocking_invalid, e.message)
+                return@setOnClickListener
+            }
+            DataStore.serverTlsFragment = when (binding.tlsFragment.checkedRadioButtonId) {
+                R.id.tls_fragment_record -> 1
+                R.id.tls_fragment_tcp -> 2
+                else -> 0
+            }
+            DataStore.serverKnockSequence = sequence
+            DataStore.serverKnockInterval =
+                binding.knockInterval.text.toString().toIntOrNull()?.coerceIn(10, 10_000) ?: 200
+            DataStore.serverKnockTtl =
+                binding.knockTtl.text.toString().toIntOrNull()?.coerceIn(1, 3600) ?: 10
+            dialog.dismiss()
+        }
     }
 
     val child by lazy { supportFragmentManager.findFragmentById(R.id.settings) as MyPreferenceFragmentCompat }
@@ -167,6 +239,8 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
             }
         }
         // shared menu item
+        // a chain is never dialed itself, its hops carry these settings
+        menu.findItem(R.id.action_connection_tweaks)?.isVisible = createEntity() !is ChainBean
         menu.findItem(R.id.action_custom_outbound_json)?.isVisible = true
         menu.findItem(R.id.action_custom_config_json)?.isVisible = true
         return true
@@ -276,6 +350,11 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
                 runOnDefaultDispatcher {
                     activity?.saveAndExit()
                 }
+                true
+            }
+
+            R.id.action_connection_tweaks -> {
+                (activity as? ProfileSettingsActivity<*>)?.showConnectionTweaksDialog()
                 true
             }
 

@@ -24,6 +24,13 @@ public abstract class AbstractBean extends Serializable {
     public String customOutboundJson;
     public String customConfigJson;
 
+    // port knocking: "7000,8000/udp,9000/tcp,1234/udp:68656c6c6f"
+    public String knockSequence;
+    public Integer knockInterval; // ms
+    public Integer knockTtl; // seconds
+    // TLS fragmentation: 0 off, 1 TLS records, 2 TCP segments
+    public Integer tlsFragment;
+
     //
     public transient String finalAddress;
     public transient int finalPort;
@@ -73,6 +80,10 @@ public abstract class AbstractBean extends Serializable {
 
         if (customOutboundJson == null) customOutboundJson = "";
         if (customConfigJson == null) customConfigJson = "";
+        if (knockSequence == null) knockSequence = "";
+        if (knockInterval == null) knockInterval = 200;
+        if (knockTtl == null) knockTtl = 10;
+        if (tlsFragment == null) tlsFragment = 0;
     }
 
 
@@ -82,12 +93,16 @@ public abstract class AbstractBean extends Serializable {
     public void serializeToBuffer(@NonNull ByteBufferOutput output) {
         serialize(output);
 
-        output.writeInt(1);
+        output.writeInt(2);
         if (!serializeWithoutName) {
             output.writeString(name);
         }
         output.writeString(customOutboundJson);
         output.writeString(customConfigJson);
+        output.writeString(knockSequence);
+        output.writeInt(knockInterval != null ? knockInterval : 200);
+        output.writeInt(knockTtl != null ? knockTtl : 10);
+        output.writeInt(tlsFragment != null ? tlsFragment : 0);
     }
 
     @Override
@@ -99,6 +114,12 @@ public abstract class AbstractBean extends Serializable {
         name = input.readString();
         customOutboundJson = input.readString();
         customConfigJson = input.readString();
+        if (extraVersion >= 2) {
+            knockSequence = input.readString();
+            knockInterval = input.readInt();
+            knockTtl = input.readInt();
+            tlsFragment = input.readInt();
+        }
     }
 
     public void serialize(ByteBufferOutput output) {

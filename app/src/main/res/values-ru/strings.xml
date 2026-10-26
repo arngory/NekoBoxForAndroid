@@ -491,4 +491,21 @@
 <string name="ws_path">Путь к WebSocket</string>
 <string name="xtls_flow">Flow (подпротокол VLESS)</string>
 <string name="yes">Да</string>
+    <string name="connection_tweaks">Port knocking и фрагментация TLS</string>
+    <string name="tls_fragment">Фрагментация TLS</string>
+    <string name="tls_fragment_record">Разбивать на TLS-записи</string>
+    <string name="tls_fragment_tcp">Разбивать на TCP-сегменты (медленнее)</string>
+    <string name="tls_fragment_summary">Разбивает TLS ClientHello к этому серверу, чтобы простой DPI не распознал SNI. Сначала попробуйте TLS-записи. Работает только для TLS поверх TCP (VMess, VLESS, Trojan, HTTP, AnyTLS, ShadowTLS).</string>
+    <string name="tls_fragment_bypass">Фрагментация TLS для прямых правил</string>
+    <string name="tls_fragment_bypass_summary">Разбивать TLS ClientHello соединений, которые правила обхода отправляют напрямую</string>
+    <string name="port_knocking">Port knocking</string>
+    <string name="port_knocking_sequence">Последовательность, например 7000, 8000/udp, 9000</string>
+    <string name="port_knocking_interval">Пауза между стуками, мс</string>
+    <string name="port_knocking_ttl">Стучать повторно через, секунд</string>
+    <string name="port_knocking_summary">Перед подключением по очереди отправляет TCP SYN или UDP-пакеты на эти порты сервера. UDP-шаг может нести hex-данные: 1234/udp:68656c6c6f. Пусто — выключено.</string>
+    <string name="port_knocking_invalid">Неверная последовательность: %s</string>
+    <string name="local_proxy_username">Имя пользователя локального прокси</string>
+    <string name="local_proxy_password">Пароль локального прокси</string>
+    <string name="local_proxy_no_auth_in_vpn">Локальный прокси без пароля в режиме VPN</string>
+    <string name="local_proxy_no_auth_in_vpn_sum">Небезопасно: любое приложение на устройстве сможет пользоваться локальным прокси и узнать адрес сервера. Нужно для опции системного HTTP-прокси.</string>
 </resources>

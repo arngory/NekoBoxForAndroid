@@ -111,6 +111,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
 
     var bypassLan by configurationStore.boolean(Key.BYPASS_LAN)
     var bypassLanInCore by configurationStore.boolean(Key.BYPASS_LAN_IN_CORE)
+    var tlsFragmentBypass by configurationStore.stringToInt(Key.TLS_FRAGMENT_BYPASS)
 
     var allowAccess by configurationStore.boolean(Key.ALLOW_ACCESS)
     var speedInterval by configurationStore.stringToInt(Key.SPEED_INTERVAL)
@@ -133,11 +134,26 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var mixedPort: Int
         get() = getLocalPort(Key.MIXED_PORT, 2080)
         set(value) = saveLocalPort(Key.MIXED_PORT, value)
+    var mixedUsername by configurationStore.string(Key.MIXED_USERNAME)
+    var mixedPassword by configurationStore.string(Key.MIXED_PASSWORD)
+    var localProxyNoAuthInVpn by configurationStore.boolean(Key.LOCAL_PROXY_NO_AUTH_IN_VPN)
+
+    // credentials the app itself uses for the local proxy, never shown to the user
+    val localProxyPassword: String
+        get() {
+            configurationStore.getString("localProxyPassword")?.takeIf { it.isNotEmpty() }?.let { return it }
+            val random = java.security.SecureRandom()
+            val alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+            val password = (1..32).map { alphabet[random.nextInt(alphabet.length)] }.joinToString("")
+            configurationStore.putString("localProxyPassword", password)
+            return password
+        }
 
     fun initGlobal() {
         if (configurationStore.getString(Key.MIXED_PORT) == null) {
             mixedPort = mixedPort
         }
+        localProxyPassword // generate once, before the service and the UI race for it
     }
 
 
@@ -242,6 +258,10 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var serverConfig by profileCacheStore.string(Key.SERVER_CONFIG)
     var serverCustom by profileCacheStore.string(Key.SERVER_CUSTOM)
     var serverCustomOutbound by profileCacheStore.string(Key.SERVER_CUSTOM_OUTBOUND)
+    var serverKnockSequence by profileCacheStore.string(Key.SERVER_KNOCK_SEQUENCE)
+    var serverKnockInterval by profileCacheStore.stringToInt(Key.SERVER_KNOCK_INTERVAL) { 200 }
+    var serverKnockTtl by profileCacheStore.stringToInt(Key.SERVER_KNOCK_TTL) { 10 }
+    var serverTlsFragment by profileCacheStore.stringToInt(Key.SERVER_TLS_FRAGMENT)
 
     var groupName by profileCacheStore.string(Key.GROUP_NAME)
     var groupType by profileCacheStore.stringToInt(Key.GROUP_TYPE)

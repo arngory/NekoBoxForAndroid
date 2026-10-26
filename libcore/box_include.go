@@ -3,6 +3,8 @@ package libcore
 import (
 	"context"
 
+	"libcore/knock"
+
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/adapter/endpoint"
 	"github.com/sagernet/sing-box/adapter/inbound"
@@ -82,6 +84,8 @@ func nekoboxAndroidOutboundRegistry() *outbound.Registry {
 	hysteria.RegisterOutbound(registry)
 	tuic.RegisterOutbound(registry)
 	hysteria2.RegisterOutbound(registry)
+
+	knock.Register(registry)
 
 	return registry
 }

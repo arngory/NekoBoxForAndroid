@@ -69,7 +69,7 @@ jobs:
         run: |
           TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0
           (cd ../sing-box && go test -count=1 -ldflags=-checklinkname=0 -tags="$TAGS" ./boxapi ./route/rule)
-          (cd libcore && go test -count=1 -ldflags=-checklinkname=0 -tags="$TAGS" .)
+          (cd libcore && go test -count=1 -ldflags=-checklinkname=0 -tags="$TAGS" . ./knock)
 
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'

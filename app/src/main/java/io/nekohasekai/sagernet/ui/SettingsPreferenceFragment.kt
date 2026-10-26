@@ -1,5 +1,6 @@
 package io.nekohasekai.sagernet.ui
 
+import io.nekohasekai.sagernet.ui.profile.ProfileSettingsActivity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -62,6 +63,9 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
             true
         }
         val mixedPort = findPreference<EditTextPreference>(Key.MIXED_PORT)!!
+        val mixedUsername = findPreference<EditTextPreference>(Key.MIXED_USERNAME)!!
+        val mixedPassword = findPreference<EditTextPreference>(Key.MIXED_PASSWORD)!!
+        val localProxyNoAuthInVpn = findPreference<SwitchPreference>(Key.LOCAL_PROXY_NO_AUTH_IN_VPN)!!
         val serviceMode = findPreference<Preference>(Key.SERVICE_MODE)!!
         val allowAccess = findPreference<Preference>(Key.ALLOW_ACCESS)!!
         val appendHttpProxy = findPreference<SwitchPreference>(Key.APPEND_HTTP_PROXY)!!
@@ -72,6 +76,7 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
 
         val bypassLan = findPreference<SwitchPreference>(Key.BYPASS_LAN)!!
         val bypassLanInCore = findPreference<SwitchPreference>(Key.BYPASS_LAN_IN_CORE)!!
+        val tlsFragmentBypass = findPreference<Preference>(Key.TLS_FRAGMENT_BYPASS)!!
 
         val remoteDns = findPreference<EditTextPreference>(Key.REMOTE_DNS)!!
         val directDns = findPreference<EditTextPreference>(Key.DIRECT_DNS)!!
@@ -149,11 +154,16 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         }
 
         mixedPort.onPreferenceChangeListener = reloadListener
+        mixedUsername.onPreferenceChangeListener = reloadListener
+        mixedPassword.onPreferenceChangeListener = reloadListener
+        mixedPassword.summaryProvider = ProfileSettingsActivity.PasswordSummaryProvider
+        localProxyNoAuthInVpn.onPreferenceChangeListener = reloadListener
         appendHttpProxy.onPreferenceChangeListener = reloadListener
         showDirectSpeed.onPreferenceChangeListener = reloadListener
         trafficSniffing.onPreferenceChangeListener = reloadListener
         bypassLan.onPreferenceChangeListener = reloadListener
         bypassLanInCore.onPreferenceChangeListener = reloadListener
+        tlsFragmentBypass.onPreferenceChangeListener = reloadListener
         mtu.onPreferenceChangeListener = reloadListener
 
         enableFakeDns.onPreferenceChangeListener = reloadListener

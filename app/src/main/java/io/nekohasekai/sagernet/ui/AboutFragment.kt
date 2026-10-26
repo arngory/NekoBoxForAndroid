@@ -1,5 +1,6 @@
 package io.nekohasekai.sagernet.ui
 
+import io.nekohasekai.sagernet.fmt.LOCAL_PROXY_USER
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -216,7 +217,7 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                 try {
                     val client = Libcore.newHttpClient().apply {
                         modernTLS()
-                        trySocks5(DataStore.mixedPort)
+                        trySocks5(DataStore.mixedPort, LOCAL_PROXY_USER, DataStore.localProxyPassword)
                     }
                     val response = client.newRequest().apply {
                         if (checkPreview) {

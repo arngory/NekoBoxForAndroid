@@ -1,0 +1,225 @@
+{
+ "log": {
+  "level": "info"
+ },
+ "dns": {
+  "servers": [
+   {
+    "type": "local",
+    "tag": "dns-local"
+   },
+   {
+    "type": "https",
+    "tag": "dns-direct",
+    "server": "dns.alidns.com",
+    "path": "/dns-query",
+    "domain_resolver": {
+     "server": "dns-local",
+     "strategy": "ipv4_only"
+    }
+   },
+   {
+    "type": "tls",
+    "tag": "dns-remote",
+    "server": "dns.google",
+    "detour": "proxy",
+    "domain_resolver": {
+     "server": "dns-direct",
+     "strategy": "ipv4_only"
+    }
+   },
+   {
+    "type": "fakeip",
+    "tag": "dns-fake",
+    "inet4_range": "198.18.0.0/15",
+    "inet6_range": "fc00::/18"
+   }
+  ],
+  "rules": [
+   {
+    "domain": [
+     "vless.example.com"
+    ],
+    "server": "dns-direct",
+    "strategy": "prefer_ipv4"
+   },
+   {
+    "domain_suffix": [
+     "ads.example"
+    ],
+    "action": "predefined",
+    "rcode": "NOERROR"
+   },
+   {
+    "inbound": [
+     "tun-in"
+    ],
+    "server": "dns-fake",
+    "disable_cache": true,
+    "strategy": "ipv4_only"
+   }
+  ],
+  "final": "dns-remote",
+  "strategy": "prefer_ipv4"
+ },
+ "inbounds": [
+  {
+   "type": "tun",
+   "tag": "tun-in",
+   "stack": "mixed",
+   "mtu": 9000,
+   "address": [
+    "172.19.0.1/28",
+    "fdfe:dcba:9876::1/126"
+   ]
+  },
+  {
+   "type": "mixed",
+   "tag": "mixed-in",
+   "listen": "127.0.0.1",
+   "listen_port": 2080
+  }
+ ],
+ "outbounds": [
+  {
+   "type": "vless",
+   "tag": "g-1",
+   "server": "vless.example.com",
+   "server_port": 443,
+   "uuid": "bf000d23-0752-40b4-affe-68f7707a9661",
+   "flow": "xtls-rprx-vision",
+   "tls": {
+    "enabled": true,
+    "server_name": "vless.example.com",
+    "utls": {
+     "enabled": true,
+     "fingerprint": "chrome"
+    },
+    "record_fragment": true
+   },
+   "detour": "g-1-knock"
+  },
+  {
+   "type": "knock",
+   "tag": "g-1-knock",
+   "sequence": [
+    {
+     "port": 7000,
+     "network": "tcp"
+    },
+    {
+     "port": 8000,
+     "network": "udp",
+     "payload": "6b"
+    }
+   ],
+   "interval": "200ms",
+   "ttl": "10s",
+   "domain_resolver": {
+    "server": "dns-direct",
+    "strategy": "prefer_ipv4"
+   }
+  },
+  {
+   "type": "direct",
+   "tag": "direct"
+  },
+  {
+   "type": "direct",
+   "tag": "bypass"
+  },
+  {
+   "type": "block",
+   "tag": "block"
+  }
+ ],
+ "endpoints": [
+  {
+   "type": "wireguard",
+   "tag": "proxy",
+   "detour": "g-1",
+   "address": [
+    "10.0.0.2/32"
+   ],
+   "private_key": "YNXtAzepDqRv9H52osJVDQnznT5AL11eVKAc9evmgFc=",
+   "mtu": 1408,
+   "peers": [
+    {
+     "address": "wg.example.com",
+     "port": 51820,
+     "public_key": "Z1XXLsKYkYxuiYjJIkRvtIKFepCYHTgON+GwPq7SOV4=",
+     "allowed_ips": [
+      "0.0.0.0/0",
+      "::/0"
+     ],
+     "reserved": "AAAA"
+    }
+   ]
+  }
+ ],
+ "route": {
+  "auto_detect_interface": true,
+  "default_domain_resolver": {
+   "server": "dns-direct",
+   "strategy": "ipv4_only"
+  },
+  "final": "proxy",
+  "rules": [
+   {
+    "inbound": [
+     "tun-in",
+     "mixed-in"
+    ],
+    "action": "sniff"
+   },
+   {
+    "port": [
+     53
+    ],
+    "action": "hijack-dns"
+   },
+   {
+    "protocol": [
+     "dns"
+    ],
+    "action": "hijack-dns"
+   },
+   {
+    "inbound": [
+     "tun-in",
+     "mixed-in"
+    ],
+    "action": "resolve",
+    "strategy": "prefer_ipv4"
+   },
+   {
+    "inbound": [
+     "tun-in",
+     "mixed-in"
+    ],
+    "network": [
+     "udp"
+    ],
+    "action": "resolve",
+    "strategy": "prefer_ipv4"
+   },
+   {
+    "domain_suffix": [
+     "ads.example"
+    ],
+    "action": "reject"
+   },
+   {
+    "ip_is_private": true,
+    "outbound": "bypass"
+   },
+   {
+    "domain_suffix": [
+     "youtube.com"
+    ],
+    "outbound": "bypass",
+    "tls_record_fragment": true
+   }
+  ]
+ }
+}

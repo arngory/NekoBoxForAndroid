@@ -41,12 +41,36 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 const val TAG_MIXED = "mixed-in"
 
+// user name the app itself uses for the local proxy, see DataStore.localProxyPassword
+const val LOCAL_PROXY_USER = "nekobox-app"
+
 const val TAG_PROXY = "proxy"
 const val TAG_DIRECT = "direct"
 const val TAG_BYPASS = "bypass"
 const val TAG_BLOCK = "block"
 
 const val LOCALHOST = "127.0.0.1"
+
+private val TLS_FRAGMENT_TYPES = setOf("vmess", "vless", "trojan", "http", "anytls", "shadowtls")
+
+/**
+ * Credentials of the local mixed inbound. In VPN mode any app on the device could otherwise
+ * use it to learn the proxy exit address, so it requires authentication unless allowed.
+ * The app always authenticates with its own credentials (see LOCAL_PROXY_USER).
+ */
+fun localProxyUsers(isVPN: Boolean): List<User>? {
+    val custom = DataStore.mixedPassword.takeIf { it.isNotBlank() }?.let {
+        User().apply {
+            username = DataStore.mixedUsername.ifBlank { "user" }
+            password = it
+        }
+    }
+    if (custom == null && (!isVPN || DataStore.localProxyNoAuthInVpn)) return null
+    return listOfNotNull(User().apply {
+        username = LOCAL_PROXY_USER
+        password = DataStore.localProxyPassword
+    }, custom)
+}
 
 class ConfigBuildResult(
     var config: String,
@@ -217,6 +241,7 @@ fun buildConfig(
                 tag = TAG_MIXED
                 listen = bind
                 listen_port = DataStore.mixedPort
+                users = localProxyUsers(isVPN)
             })
         }
 
@@ -255,6 +280,8 @@ fun buildConfig(
             lateinit var pastOutbound: SingBoxOption
             lateinit var pastInboundTag: String
             var pastEntity: ProxyEntity? = null
+            // where the next hop has to be attached: the past outbound or its knock outbound
+            var pastDetourHolder: SingBoxOption? = null
             val externalChainMap = LinkedHashMap<Int, ProxyEntity>()
             externalIndexMap.add(IndexEntity(externalChainMap))
             val chainOutbounds = ArrayList<SingBoxOption>()
@@ -305,7 +332,7 @@ fun buildConfig(
                             outbound = tagOut
                         })
                     } else {
-                        pastOutbound._hack_config_map["detour"] = tagOut
+                        (pastDetourHolder ?: pastOutbound)._hack_config_map["detour"] = tagOut
                     }
                 } else {
                     // index == 0 means last profile in chain / not chain
@@ -410,10 +437,45 @@ fun buildConfig(
                     _hack_custom_config = bean.customOutboundJson
                 }
 
+                // TLS fragmentation, only meaningful for TCP-based TLS outbounds
+                if (!proxyEntity.needExternal() && (bean.tlsFragment ?: 0) > 0 &&
+                    (currentOutbound as? Outbound)?.type in TLS_FRAGMENT_TYPES
+                ) {
+                    currentOutbound._hack_config_map["tls"] = mapOf(
+                        (if (bean.tlsFragment == 2) "fragment" else "record_fragment") to true
+                    )
+                }
+
+                // port knocking: a libcore "knock" outbound dials the server for this hop
+                var knockTag: String? = null
+                pastDetourHolder = null
+                if (bean.hasPortKnocking()) {
+                    if (proxyEntity.needExternal() && index != profileList.lastIndex) {
+                        throw Exception("Port knocking (${bean.displayName()}): plugin profiles support it only as the first hop of a chain")
+                    }
+                    knockTag = "$tagOut-knock"
+                    val knockOutbound = Outbound().apply {
+                        type = "knock"
+                        tag = knockTag
+                    }
+                    knockOutbound._hack_config_map.putAll(bean.buildKnockOutboundOptions())
+                    currentOutbound._hack_config_map.remove("domain_resolver")?.let {
+                        knockOutbound._hack_config_map["domain_resolver"] = it
+                    }
+                    if (!proxyEntity.needExternal()) {
+                        currentOutbound._hack_config_map["detour"] = knockTag
+                        pastDetourHolder = knockOutbound
+                    }
+                    outbounds.add(knockOutbound)
+                }
+
                 // External proxy need a dokodemo-door inbound to forward the traffic
                 // For external proxy software, their traffic must goes to v2ray-core to use protected fd.
                 bean.finalAddress = bean.serverAddress
                 bean.finalPort = bean.serverPort
+                if (knockTag != null && proxyEntity.needExternal() && !bean.canMapping()) {
+                    throw Exception("Port knocking (${bean.displayName()}): not supported for this plugin profile")
+                }
                 if (bean.canMapping() && proxyEntity.needExternal()) {
                     // With ss protect, don't use mapping
                     var needExternal = true
@@ -423,7 +485,8 @@ fun buildConfig(
                             else -> ""
                         }
                         if (Plugins.isUsingMatsuriExe(pluginId)) {
-                            needExternal = false
+                            // keep the mapping when knocking, the knock outbound has to dial the server
+                            needExternal = knockTag != null
                         } else if (Plugins.getPluginExternal(pluginId) != null) {
                             throw Exception("You are using an unsupported $pluginId, please download the correct plugin.")
                         }
@@ -448,7 +511,7 @@ fun buildConfig(
                             if (index == profileList.lastIndex) {
                                 route.rules.add(Rule_DefaultOptions().apply {
                                     inbound = listOf(tag)
-                                    outbound = TAG_DIRECT
+                                    outbound = knockTag ?: TAG_DIRECT
                                 })
                             }
                         })
@@ -619,6 +682,11 @@ fun buildConfig(
                         ruleObj.outbound = null
                         ruleObj.action = "reject"
                     }
+                    // split ClientHello of directly routed TLS, e.g. for SNI-throttled sites
+                    if (ruleObj.outbound == TAG_BYPASS) when (DataStore.tlsFragmentBypass) {
+                        1 -> ruleObj._hack_config_map["tls_record_fragment"] = true
+                        2 -> ruleObj._hack_config_map["tls_fragment"] = true
+                    }
                     route.rules.add(ruleObj)
                     route.rule_set.addAll(ruleSets)
                 }
@@ -673,6 +741,18 @@ fun buildConfig(
             remoteDns.firstOrNull() ?: throw Exception("No remote DNS, check your settings!"),
             "dns-remote", TAG_PROXY, "dns-direct"
         ))
+
+        // server address lookups go straight to a transport, so they need the direct strategy
+        autoDnsDomainStrategy(SingBoxOptionsUtil.domainStrategy("dns-direct"))?.let { strategy ->
+            dns.servers.forEach {
+                val resolver = it.domain_resolver ?: return@forEach
+                it.domain_resolver = null
+                it._hack_config_map["domain_resolver"] = mapOf("server" to resolver, "strategy" to strategy)
+            }
+            route.default_domain_resolver = null
+            route._hack_config_map["default_domain_resolver"] =
+                mapOf("server" to "dns-direct", "strategy" to strategy)
+        }
 
         dns.final_ = if (forTest) "dns-direct" else "dns-remote"
 

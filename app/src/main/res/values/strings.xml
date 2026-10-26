@@ -579,4 +579,21 @@
     <string name="minimize">Minimize</string>
     <string name="app_list_permission_denied">Unable to read installed apps.\nThis is usually because the system has restricted app read permissions.\nPlease grant permissions in the system settings.</string>
     <string name="open_app_settings">Open System Settings</string>
+    <string name="connection_tweaks">Port knocking and TLS fragmentation</string>
+    <string name="tls_fragment">TLS fragmentation</string>
+    <string name="tls_fragment_record">Split into TLS records</string>
+    <string name="tls_fragment_tcp">Split into TCP segments (slower)</string>
+    <string name="tls_fragment_summary">Splits the TLS ClientHello of this server so simple DPI cannot match the SNI. Try TLS records first. Only applies to TCP-based TLS (VMess, VLESS, Trojan, HTTP, AnyTLS, ShadowTLS).</string>
+    <string name="tls_fragment_bypass">TLS fragmentation for direct rules</string>
+    <string name="tls_fragment_bypass_summary">Split the TLS ClientHello of connections routed directly by bypass rules</string>
+    <string name="port_knocking">Port knocking</string>
+    <string name="port_knocking_sequence">Knock sequence, e.g. 7000, 8000/udp, 9000</string>
+    <string name="port_knocking_interval">Delay between knocks, ms</string>
+    <string name="port_knocking_ttl">Knock again after, seconds</string>
+    <string name="port_knocking_summary">Before connecting, sends TCP SYNs or UDP datagrams to these ports of the server, in order. UDP steps may carry a hex payload: 1234/udp:68656c6c6f. Leave empty to disable.</string>
+    <string name="port_knocking_invalid">Invalid knock sequence: %s</string>
+    <string name="local_proxy_username">Local proxy user name</string>
+    <string name="local_proxy_password">Local proxy password</string>
+    <string name="local_proxy_no_auth_in_vpn">Local proxy without password in VPN mode</string>
+    <string name="local_proxy_no_auth_in_vpn_sum">Unsafe: any app on the device can use the local proxy and learn the server address. Needed for the system HTTP proxy option.</string>
 </resources>

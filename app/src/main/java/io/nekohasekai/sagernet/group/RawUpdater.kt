@@ -1,5 +1,6 @@
 package io.nekohasekai.sagernet.group
 
+import io.nekohasekai.sagernet.fmt.LOCAL_PROXY_USER
 import android.annotation.SuppressLint
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.database.*
@@ -57,7 +58,7 @@ object RawUpdater : GroupUpdater() {
         } else {
 
             val response = Libcore.newHttpClient().apply {
-                trySocks5(DataStore.mixedPort)
+                trySocks5(DataStore.mixedPort, LOCAL_PROXY_USER, DataStore.localProxyPassword)
                 tryH3Direct()
                 when (DataStore.appTLSVersion) {
                     "1.3" -> restrictedTLS()
@@ -164,6 +165,10 @@ object RawUpdater : GroupUpdater() {
                 // 更新订阅，保留自定义覆写设置
                 bean.customOutboundJson = existsBean.customOutboundJson
                 bean.customConfigJson = existsBean.customConfigJson
+                bean.knockSequence = existsBean.knockSequence
+                bean.knockInterval = existsBean.knockInterval
+                bean.knockTtl = existsBean.knockTtl
+                bean.tlsFragment = existsBean.tlsFragment
                 when {
                     existsBean != bean -> {
                         changed++

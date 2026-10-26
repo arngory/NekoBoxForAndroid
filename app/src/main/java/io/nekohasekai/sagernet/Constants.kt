@@ -35,8 +35,12 @@ object Key {
 
     const val BYPASS_LAN = "bypassLan"
     const val BYPASS_LAN_IN_CORE = "bypassLanInCore"
+    const val TLS_FRAGMENT_BYPASS = "tlsFragmentBypass"
 
     const val MIXED_PORT = "mixedPort"
+    const val MIXED_USERNAME = "mixedUsername"
+    const val MIXED_PASSWORD = "mixedPassword"
+    const val LOCAL_PROXY_NO_AUTH_IN_VPN = "localProxyNoAuthInVpn"
     const val ALLOW_ACCESS = "allowAccess"
     const val SPEED_INTERVAL = "speedInterval"
     const val SHOW_DIRECT_SPEED = "showDirectSpeed"
@@ -94,6 +98,10 @@ object Key {
     const val SERVER_CONFIG = "serverConfig"
     const val SERVER_CUSTOM = "serverCustom"
     const val SERVER_CUSTOM_OUTBOUND = "serverCustomOutbound"
+    const val SERVER_KNOCK_SEQUENCE = "serverKnockSequence"
+    const val SERVER_KNOCK_INTERVAL = "serverKnockInterval"
+    const val SERVER_KNOCK_TTL = "serverKnockTtl"
+    const val SERVER_TLS_FRAGMENT = "serverTlsFragment"
 
     const val SERVER_SECURITY_CATEGORY = "serverSecurityCategory"
     const val SERVER_TLS_CAMOUFLAGE_CATEGORY = "serverTlsCamouflageCategory"
