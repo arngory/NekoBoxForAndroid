@@ -4,6 +4,7 @@ import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.tasks.Copy
 import org.gradle.kotlin.dsl.getByName
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions
 import java.util.Base64
@@ -154,6 +155,18 @@ fun Project.setupApp() {
         }
     }
     setupAppCommon()
+
+    // launcher shortcuts must name the package literally, so generate them for PACKAGE_NAME
+    // (debug builds get an applicationIdSuffix, their shortcuts still point to the release package)
+    val shortcutsDir = layout.buildDirectory.dir("generated/res/shortcuts")
+    val generateShortcuts = tasks.register("generateShortcuts", Copy::class.java) {
+        inputs.property("applicationId", pkgName)
+        from("src/main/shortcuts")
+        into(shortcutsDir.map { it.dir("xml") })
+        filter { line: String -> line.replace("@APPLICATION_ID@", pkgName) }
+    }
+    android.sourceSets.getByName("main").res.srcDir(shortcutsDir)
+    tasks.named("preBuild").configure { dependsOn(generateShortcuts) }
 
     android.apply {
         this as AbstractAppExtension
