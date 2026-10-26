@@ -57,11 +57,18 @@ func ResetAllConnections(system bool) {
 		log.Println("TODO: Reset user connections")
 		return
 	}
-	if mainInstance == nil {
+	instance := mainInstance
+	if instance == nil {
 		log.Println("Reset system connections skipped: no active instance")
 		return
 	}
-	mainInstance.Router().ResetNetwork()
+	instance.access.Lock()
+	defer instance.access.Unlock()
+	if instance.state != 1 {
+		return
+	}
+	// closes tracked connections and notifies endpoints, unlike Router().ResetNetwork()
+	instance.Network().ResetNetwork(context.Background())
 	log.Println("Reset system connections done")
 }
 

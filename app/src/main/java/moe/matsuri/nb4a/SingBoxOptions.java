@@ -346,8 +346,10 @@ public class SingBoxOptions {
             options.tag = tag;
             options.detour = detour;
             options.domain_resolver = resolver;
-            if ("local".equals(address)) {
+            if ("local".equals(address) || address.startsWith("dhcp://")) {
+                // the system resolver already uses the DHCP-provided servers on Android
                 options.type = "local";
+                options.domain_resolver = null;
                 return options;
             }
             String uriAddress = address;
