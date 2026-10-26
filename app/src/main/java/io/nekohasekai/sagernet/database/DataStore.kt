@@ -23,6 +23,11 @@ import moe.matsuri.nb4a.TempDatabase
 
 object DataStore : OnPreferenceDataStoreChangeListener {
 
+    fun migrateLegacySettings() {
+        // sniff override destination was removed in sing-box 1.13
+        if (trafficSniffing > 1) trafficSniffing = 1
+    }
+
     // share service state in main & bg process
     @Volatile
     var serviceState = BaseService.State.Idle

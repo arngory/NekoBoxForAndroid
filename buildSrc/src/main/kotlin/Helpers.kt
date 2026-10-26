@@ -44,7 +44,7 @@ fun Project.setupCommon() {
         buildToolsVersion = "35.0.1"
         compileSdk = 35
         defaultConfig {
-            minSdk = 21
+            minSdk = 23
             targetSdk = 35
         }
         buildTypes {
@@ -118,12 +118,13 @@ fun Project.setupAppCommon() {
     val keystorePwd = lp.getProperty("KEYSTORE_PASS") ?: System.getenv("KEYSTORE_PASS")
     val alias = lp.getProperty("ALIAS_NAME") ?: System.getenv("ALIAS_NAME")
     val pwd = lp.getProperty("ALIAS_PASS") ?: System.getenv("ALIAS_PASS")
+    val keystoreFile = lp.getProperty("KEYSTORE_FILE") ?: System.getenv("KEYSTORE_FILE")
 
     android.apply {
         if (keystorePwd != null) {
             signingConfigs {
                 create("release") {
-                    storeFile = rootProject.file("release.keystore")
+                    storeFile = rootProject.file(keystoreFile ?: "release.keystore")
                     storePassword = keystorePwd
                     keyAlias = alias
                     keyPassword = pwd
