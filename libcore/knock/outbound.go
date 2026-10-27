@@ -40,7 +40,17 @@ const (
 	maxPayload      = 1024
 	// lower bound between forced knocks to the same host
 	minReknockGap = 2 * time.Second
+	// A TCP knock is abandoned before the kernel retransmits its SYN (initial
+	// RTO is 1s): knockd counts any TCP packet, and a late SYN to the previous
+	// port resets the sequence. The floor leaves time for protect() + connect().
+	minTCPAttempt = 100 * time.Millisecond
+	maxTCPAttempt = 800 * time.Millisecond
+	// time for the server to run its start command before the real connection
+	minSettle = 150 * time.Millisecond
 )
+
+// what the reference `knock` client sends to a UDP port
+var defaultUDPPayload = []byte{0}
 
 type Step struct {
 	Port    uint16 `json:"port"`
@@ -328,19 +338,23 @@ func (o *Outbound) knock(ctx context.Context, destination M.Socksaddr, force boo
 	}
 }
 
+// sendSequence knocks the steps strictly in order: a step starts only after
+// the previous one is over and at least `interval` after it started.
 func (o *Outbound) sendSequence(ctx context.Context, destination M.Socksaddr) error {
 	o.logger.InfoContext(ctx, "knocking ", destination.AddrString(), " (", len(o.steps), " steps)")
 	for i, s := range o.steps {
-		if i > 0 {
-			err := sleep(ctx, o.interval)
-			if err != nil {
-				return err
-			}
-		}
+		started := time.Now()
 		o.send(ctx, M.Socksaddr{Addr: destination.Addr, Fqdn: destination.Fqdn, Port: s.port}, s)
+		if i == len(o.steps)-1 {
+			break
+		}
+		err := sleep(ctx, o.interval-time.Since(started))
+		if err != nil {
+			return err
+		}
 	}
 	// give the firewall time to apply the rule before the real connection
-	return sleep(ctx, o.interval)
+	return sleep(ctx, max(o.interval, minSettle))
 }
 
 func (o *Outbound) send(ctx context.Context, destination M.Socksaddr, s step) {
@@ -355,25 +369,35 @@ func (o *Outbound) send(ctx context.Context, destination M.Socksaddr, s step) {
 		if destination.IsIP() {
 			addr = destination.UDPAddr()
 		}
-		_, err = packetConn.WriteTo(s.payload, addr)
+		payload := s.payload
+		if len(payload) == 0 {
+			payload = defaultUDPPayload
+		}
+		_, err = packetConn.WriteTo(payload, addr)
 		if err != nil {
 			o.logger.DebugContext(ctx, "knock udp ", destination, ": ", err)
 		}
 		return
 	}
-	// A closed port never answers, so the SYN is sent in the background and
-	// the attempt is abandoned once the next step is due.
-	dialCtx, cancel := context.WithTimeout(ctx, o.interval)
-	go func() {
-		defer cancel()
-		conn, err := o.dialer.DialContext(dialCtx, N.NetworkTCP, destination)
-		if err == nil {
-			conn.Close()
-		}
-	}()
+	// Like `knock`: one SYN, no waiting for the handshake. A dropped port
+	// never answers, so the attempt is cut before the SYN is retransmitted.
+	dialCtx, cancel := context.WithTimeout(ctx, tcpAttemptTimeout(o.interval))
+	defer cancel()
+	conn, err := o.dialer.DialContext(dialCtx, N.NetworkTCP, destination)
+	if err == nil {
+		// an open knock port; knockd needs `tcpflags = syn` to ignore our FIN
+		conn.Close()
+	}
+}
+
+func tcpAttemptTimeout(interval time.Duration) time.Duration {
+	return min(max(interval, minTCPAttempt), maxTCPAttempt)
 }
 
 func sleep(ctx context.Context, duration time.Duration) error {
+	if duration <= 0 {
+		return ctx.Err()
+	}
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
 	select {

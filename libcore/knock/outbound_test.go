@@ -366,3 +366,60 @@ func TestNetworkChangeDoesNotBlock(t *testing.T) {
 		t.Fatal("knock from before the network change is still cached")
 	}
 }
+
+func TestDefaultUDPPayloadLikeKnockClient(t *testing.T) {
+	r := &recorder{}
+	payloads := make(chan string, 1)
+	port := listenUDP(t, r, "udp", payloads)
+	outbound := newBox(t, Options{Sequence: []Step{{Port: port, Network: "udp"}}})
+	outbound.interval = 10 * time.Millisecond
+	if _, err := outbound.knock(context.Background(), M.ParseSocksaddrHostPort("127.0.0.1", port), false); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case payload := <-payloads:
+		if payload != "\x00" {
+			t.Fatalf("payload %q, want one zero byte", payload)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("no udp knock")
+	}
+}
+
+func TestStrictOrderWithShortInterval(t *testing.T) {
+	r := &recorder{}
+	var steps []Step
+	var want []string
+	for i := 0; i < 6; i++ {
+		name := "p" + strconv.Itoa(i)
+		steps = append(steps, Step{Port: listenTCP(t, r, name)})
+		want = append(want, name)
+	}
+	outbound := newBox(t, Options{Sequence: steps})
+	outbound.interval = 10 * time.Millisecond
+	if _, err := outbound.knock(context.Background(), M.ParseSocksaddrHostPort("127.0.0.1", 1), false); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(100 * time.Millisecond)
+	events := r.snapshot()
+	if len(events) != len(want) {
+		t.Fatalf("events %v, want %v", events, want)
+	}
+	for i := range want {
+		if events[i] != want[i] {
+			t.Fatalf("events %v, want %v", events, want)
+		}
+	}
+}
+
+// A dropped port never answers; the attempt must end before the kernel
+// retransmits the SYN (1s), whatever the interval, or knockd sees a late SYN
+// to the previous port and resets the sequence.
+func TestTCPAttemptEndsBeforeRetransmit(t *testing.T) {
+	for _, interval := range []time.Duration{0, 10 * time.Millisecond, 200 * time.Millisecond, time.Second, time.Minute} {
+		timeout := tcpAttemptTimeout(interval)
+		if timeout >= time.Second || timeout < minTCPAttempt {
+			t.Fatalf("interval %v: attempt timeout %v", interval, timeout)
+		}
+	}
+}
