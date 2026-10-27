@@ -502,11 +502,11 @@
     <string name="port_knocking_sequence">Последовательность, например 7000, 8000/udp, 9000</string>
     <string name="port_knocking_interval">Пауза между стуками, мс</string>
     <string name="port_knocking_ttl">Стучать повторно через, секунд</string>
-    <string name="port_knocking_summary">Перед подключением по очереди отправляет TCP SYN или UDP-пакеты на эти порты сервера. UDP-шаг может нести hex-данные: 1234/udp:68656c6c6f. Стучит заново при смене сети и при неудачном подключении. Если после отправки данных сервер молчит дольше заданного времени, стучит ещё раз и пишет в лог, ожил ли сервер. Пустая последовательность — выключено.</string>
+    <string name="port_knocking_summary">Перед подключением по очереди отправляет TCP SYN или UDP-пакеты на эти порты сервера. UDP-шаг может нести hex-данные: 1234/udp:68656c6c6f. Стучит заново при смене сети и при неудачном подключении. Если UDP-сессия (WireGuard, Hysteria2, TUIC) после отправки данных не получает ответа дольше заданного времени, стучит ещё раз и пишет в лог, ожил ли сервер. Пустая последовательность — выключено.</string>
     <string name="port_knocking_invalid">Неверная последовательность: %s</string>
     <string name="local_proxy_username">Имя пользователя локального прокси</string>
     <string name="local_proxy_password">Пароль локального прокси</string>
     <string name="local_proxy_no_auth_in_vpn">Локальный прокси без пароля в режиме VPN</string>
     <string name="local_proxy_no_auth_in_vpn_sum">Небезопасно: любое приложение на устройстве сможет пользоваться локальным прокси и узнать адрес сервера. Нужно для опции системного HTTP-прокси.</string>
-    <string name="port_knocking_silence">Перестучать, если сервер молчит, секунд (0 — выкл.)</string>
+    <string name="port_knocking_silence">Перестучать, если UDP-сессия без ответа, секунд (0 — выкл.)</string>
 </resources>

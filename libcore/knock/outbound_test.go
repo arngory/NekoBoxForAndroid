@@ -322,7 +322,7 @@ func TestReknockOnSilenceDialedUDP(t *testing.T) {
 	}
 }
 
-func TestNoReknockWhenServerAnswers(t *testing.T) {
+func TestTCPConnectionsAreNotWatched(t *testing.T) {
 	r := &recorder{}
 	outbound := newSilenceBox(t, r)
 	server := listenTCP(t, r, "server")
@@ -331,19 +331,51 @@ func TestNoReknockWhenServerAnswers(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.Close()
-	buffer := make([]byte, 4)
+	if _, wrapped := conn.(*silentConn); wrapped {
+		t.Fatal("tcp connection wrapped: half-close and splice would be lost")
+	}
+}
+
+func TestWireGuardKeepaliveDoesNotArm(t *testing.T) {
+	r := &recorder{}
+	outbound := newSilenceBox(t, r)
+	destination := silentUDP(t)
+	conn, err := outbound.DialContext(context.Background(), N.NetworkUDP, destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	keepalive := make([]byte, 32)
+	keepalive[0] = 4
+	keepalive[1] = 0x12 // reserved bytes
 	for i := 0; i < 4; i++ {
-		if _, err = conn.Write([]byte("ping")); err != nil {
-			t.Fatal(err)
-		}
-		if _, err = io.ReadFull(conn, buffer); err != nil {
+		if _, err = conn.Write(keepalive); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
 	time.Sleep(200 * time.Millisecond)
 	if n := count(r.snapshot(), "knock"); n != 1 {
-		t.Fatalf("knocks: %d, an echoing server must not be re-knocked", n)
+		t.Fatalf("knocks: %d, keepalives on an idle tunnel must not re-knock", n)
+	}
+}
+
+func TestSkippedReknockStaysArmed(t *testing.T) {
+	r := &recorder{}
+	outbound := newSilenceBox(t, r)
+	destination := silentUDP(t)
+	conn, err := outbound.DialContext(context.Background(), N.NetworkUDP, destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	// the dial knocked just now, so the first silence re-knock is skipped by minReknockGap
+	if _, err = conn.Write([]byte("handshake")); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(300 * time.Millisecond)
+	if conn.(*silentConn).knocked.Load() {
+		t.Fatal("watchdog disarmed although nothing was knocked")
 	}
 }
 

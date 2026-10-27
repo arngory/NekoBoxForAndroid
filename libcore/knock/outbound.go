@@ -211,7 +211,14 @@ func (o *Outbound) DialContext(ctx context.Context, network string, destination 
 		o.forget(destination)
 		return nil, err
 	}
-	return o.watchConn(conn, destination), nil
+	if N.NetworkName(network) == N.NetworkUDP {
+		// e.g. WireGuard with one peer dials its UDP socket
+		return o.watchConn(conn, destination), nil
+	}
+	// A broken TCP session errors out and the reconnect knocks; established
+	// TCP survives a closed window via conntrack, and silence after a write is
+	// normal there (uploads), so TCP connections are returned unwrapped.
+	return conn, nil
 }
 
 func (o *Outbound) ListenPacket(ctx context.Context, destination M.Socksaddr) (net.PacketConn, error) {
@@ -408,11 +415,11 @@ func sleep(ctx context.Context, duration time.Duration) error {
 	}
 }
 
-// watchdog re-knocks once when data was sent but nothing came back for
-// `silence`, then checks after another `silence` whether the server answers
-// again. It re-arms only after a reply, so a dead server is knocked once per
-// connection; reconnects knock on their own. Connections are never closed
-// here: a slow reply (long polling) must not break them.
+// watchdog re-knocks a UDP session once when data was sent but nothing came
+// back for `silence`, then checks after another `silence` whether the server
+// answers again. It re-arms only after a reply, so a dead server is knocked
+// once per session. Long-lived UDP transports (WireGuard, QUIC) keep one
+// socket and never dial again, so this is their only way back.
 type watchdog struct {
 	outbound    *Outbound
 	destination M.Socksaddr
@@ -435,8 +442,15 @@ func (w *watchdog) onRead() {
 	}
 }
 
-func (w *watchdog) onWrite() {
-	if w.knocked.Load() || !w.pending.CompareAndSwap(false, true) {
+// isWireGuardKeepalive matches an empty WireGuard transport message: the
+// peer does not answer it, so it must not arm the watchdog. Bytes 1-3 may
+// carry "reserved" values.
+func isWireGuardKeepalive(p []byte) bool {
+	return len(p) == 32 && p[0] == 4
+}
+
+func (w *watchdog) onWrite(p []byte) {
+	if isWireGuardKeepalive(p) || w.knocked.Load() || !w.pending.CompareAndSwap(false, true) {
 		return
 	}
 	sentAt := time.Now().UnixNano()
@@ -450,6 +464,8 @@ func (w *watchdog) onWrite() {
 		defer cancel()
 		knocked, err := o.knock(ctx, w.destination, true)
 		if err != nil || !knocked {
+			// nothing sent (another session knocked just now): stay armed
+			w.knocked.Store(false)
 			return
 		}
 		o.logger.Warn("no reply from ", w.destination.AddrString(), " for ", o.silence, ", knocked again")
@@ -483,7 +499,7 @@ func (c *silentConn) Read(p []byte) (int, error) {
 }
 
 func (c *silentConn) Write(p []byte) (int, error) {
-	c.onWrite()
+	c.onWrite(p)
 	return c.Conn.Write(p)
 }
 
@@ -506,7 +522,7 @@ func (c *silentPacketConn) ReadFrom(p []byte) (int, net.Addr, error) {
 }
 
 func (c *silentPacketConn) WriteTo(p []byte, addr net.Addr) (int, error) {
-	c.onWrite()
+	c.onWrite(p)
 	return c.PacketConn.WriteTo(p, addr)
 }
 
