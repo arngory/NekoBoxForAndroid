@@ -21,6 +21,7 @@
 package io.nekohasekai.sagernet
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ShortcutManager
 import android.os.Build
@@ -39,17 +40,40 @@ class QuickToggleShortcut : Activity(), SagerConnection.Callback {
     private val connection = SagerConnection(SagerConnection.CONNECTION_ID_SHORTCUT)
     private var profileId = -1L
 
+    companion object {
+        private const val LEGACY_ALIAS = "io.nekohasekai.sagernet.QuickToggleShortcutLegacy"
+        private const val EXTRA_TOKEN = "token"
+
+        /** Intent for a pinned shortcut that toggles [profileId], or the selected profile for -1. */
+        fun shortcutIntent(context: Context, profileId: Long = -1L): Intent {
+            val intent = if (Build.VERSION.SDK_INT >= 26) {
+                Intent(context, QuickToggleShortcut::class.java)
+            } else {
+                // the launcher starts it with its own identity, so it has to go through the exported alias
+                Intent().setClassName(context, LEGACY_ALIAS)
+                    .putExtra(EXTRA_TOKEN, DataStore.shortcutToken)
+            }
+            intent.action = Intent.ACTION_MAIN
+            if (profileId >= 0) intent.putExtra("profile", profileId)
+            return intent
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (intent.action == Intent.ACTION_CREATE_SHORTCUT) {
             setResult(RESULT_OK, ShortcutManagerCompat.createShortcutResultIntent(this,
                 ShortcutInfoCompat.Builder(this, "toggle")
-                    .setIntent(Intent(this,
-                        QuickToggleShortcut::class.java).setAction(Intent.ACTION_MAIN))
+                    .setIntent(shortcutIntent(this))
                     .setIcon(IconCompat.createWithResource(this,
                         R.drawable.ic_qu_shadowsocks_launcher))
                     .setShortLabel(getString(R.string.quick_toggle))
                     .build()))
+            finish()
+        } else if (intent.component?.className == LEGACY_ALIAS &&
+            intent.getStringExtra(EXTRA_TOKEN) != DataStore.shortcutToken
+        ) {
+            // any app can start the exported alias
             finish()
         } else {
             profileId = intent.getLongExtra("profile", -1L)

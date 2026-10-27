@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older: only a device-to-device transfer (Android 9+) carries the databases.
+     Android 8.1 and older ignore requireFlags; those devices still back them up to the cloud. -->
 <full-backup-content xmlns:tools="http://schemas.android.com/tools"
                      tools:ignore="FullBackupContent">
-    <include domain="database" path="sager_net.db"/>
+    <include domain="database" path="sager_net.db" requireFlags="deviceToDeviceTransfer"/>
     <!-- No device storage yet in Android 6.0 -->
-    <include domain="database" path="configuration.db"/>
-    <include domain="device_database" path="configuration.db"/>
+    <include domain="database" path="configuration.db" requireFlags="deviceToDeviceTransfer"/>
+    <include domain="device_database" path="configuration.db" requireFlags="deviceToDeviceTransfer"/>
 </full-backup-content>

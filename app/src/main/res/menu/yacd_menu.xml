@@ -4,6 +4,9 @@
         android:id="@+id/action_set_url"
         android:title="@string/set_panel_url" />
     <item
+        android:id="@+id/action_copy_secret"
+        android:title="@string/copy_clash_api_secret" />
+    <item
         android:id="@+id/close"
         android:title="@string/mal_close" />
 </menu>

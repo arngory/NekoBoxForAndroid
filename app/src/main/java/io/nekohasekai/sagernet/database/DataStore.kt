@@ -20,6 +20,7 @@ import io.nekohasekai.sagernet.ktx.string
 import io.nekohasekai.sagernet.ktx.stringToInt
 import io.nekohasekai.sagernet.ktx.stringToIntIfExists
 import moe.matsuri.nb4a.TempDatabase
+import java.security.SecureRandom
 
 object DataStore : OnPreferenceDataStoreChangeListener {
 
@@ -184,6 +185,15 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var profileTrafficStatistics by configurationStore.boolean(Key.PROFILE_TRAFFIC_STATISTICS) { true }
 
     var yacdURL by configurationStore.string("yacdURL") { "http://127.0.0.1:9090/ui" }
+
+    // every app on the device can reach 127.0.0.1, so the Clash API and exported shortcuts need a token
+    private var clashApiSecretStored by configurationStore.string("clashApiSecret")
+    val clashApiSecret get() = clashApiSecretStored.ifBlank { randomToken().also { clashApiSecretStored = it } }
+    private var shortcutTokenStored by configurationStore.string("shortcutToken")
+    val shortcutToken get() = shortcutTokenStored.ifBlank { randomToken().also { shortcutTokenStored = it } }
+
+    private fun randomToken() = ByteArray(16).also { SecureRandom().nextBytes(it) }
+        .joinToString("") { "%02x".format(it) }
 
     // protocol
 

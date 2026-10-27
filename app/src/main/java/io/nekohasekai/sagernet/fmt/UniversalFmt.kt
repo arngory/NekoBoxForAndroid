@@ -2,6 +2,7 @@ package io.nekohasekai.sagernet.fmt
 
 import io.nekohasekai.sagernet.database.ProxyEntity
 import io.nekohasekai.sagernet.database.ProxyGroup
+import moe.matsuri.nb4a.proxy.config.ConfigBean
 import moe.matsuri.nb4a.utils.Util
 
 fun parseUniversal(link: String): AbstractBean {
@@ -34,3 +35,6 @@ fun ProxyGroup.toUniversalLink(): String {
     export = false
     return link
 }
+/** True when this profile replaces or rewrites the whole sing-box config, not just its outbound. */
+fun AbstractBean.overridesFullConfig() =
+    !customConfigJson.isNullOrBlank() || (this is ConfigBean && type == 0)

@@ -212,23 +212,31 @@
         <activity
             android:name="io.nekohasekai.sagernet.ui.AppListActivity"
             android:configChanges="uiMode" />
+        <!-- shortcuts are started with our own identity, so the targets need not be exported -->
         <activity
             android:name=".QuickToggleShortcut"
             android:excludeFromRecents="true"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/quick_toggle"
             android:launchMode="singleTask"
             android:process=":bg"
             android:taskAffinity=""
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- launchers start CREATE_SHORTCUT and, before Android 8, the pinned shortcut themselves;
+             a toggle through this alias needs the per-install token -->
+        <activity-alias
+            android:name=".QuickToggleShortcutLegacy"
+            android:exported="true"
+            android:label="@string/quick_toggle"
+            android:targetActivity=".QuickToggleShortcut">
             <intent-filter>
                 <action android:name="android.intent.action.CREATE_SHORTCUT" />
             </intent-filter>
-        </activity>
+        </activity-alias>
         <activity
             android:name="io.nekohasekai.sagernet.ui.QuickEnableShortcut"
             android:excludeFromRecents="true"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/quick_enable"
             android:launchMode="singleTask"
             android:process=":bg"
@@ -237,7 +245,7 @@
         <activity
             android:name="io.nekohasekai.sagernet.ui.QuickDisableShortcut"
             android:excludeFromRecents="true"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/quick_disable"
             android:launchMode="singleTask"
             android:process=":bg"

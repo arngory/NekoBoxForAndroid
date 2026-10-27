@@ -142,7 +142,8 @@
 <string name="empty_route_notice">Установите какие-либо правила перед сохранением</string>
 <string name="enable">Включить</string>
 <string name="enable_clash_api">Включить Clash API</string>
-<string name="enable_clash_api_summary">Предоставлять панель управления Clash API и YACD по адресу 127.0.0.1:9090</string>
+<string name="enable_clash_api_summary">Предоставлять панель управления Clash API и YACD по адресу 127.0.0.1:9090. API защищён случайным ключом, для других клиентов его можно скопировать в меню панели</string>
+<string name="copy_clash_api_secret">Скопировать ключ API</string>
 <string name="enable_dns_routing">Включить маршрутизацию DNS</string>
 <string name="enable_ech">Включить ECH</string>
 <string name="enable_ech_sum">Включить зашифрованный клиент Hello</string>
@@ -328,6 +329,7 @@
 <string name="profile_empty">Пожалуйста, выберите профиль</string>
 <string name="profile_import">Импортировать профиль</string>
 <string name="profile_import_message">Подтвердите, что хотите импортировать профиль %s?</string>
+<string name="profile_import_full_config_warning">Внимание: этот профиль заменяет или переписывает весь конфиг sing-box (локальный прокси, DNS, маршрутизацию). Импортируйте его, только если доверяете источнику.</string>
 <string name="profile_name">Имя профиля</string>
 <string name="profile_requiring_plugin">Профиль %s требует установки подключаемого модуля %s, но он не найден.</string>
 <string name="profile_traffic_statistics">Статистика трафика профиля</string>

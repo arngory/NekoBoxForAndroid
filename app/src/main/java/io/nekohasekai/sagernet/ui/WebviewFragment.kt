@@ -1,6 +1,7 @@
 package io.nekohasekai.sagernet.ui
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.view.MenuItem
@@ -11,8 +12,10 @@ import androidx.appcompat.widget.Toolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.nekohasekai.sagernet.BuildConfig
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.databinding.LayoutWebviewBinding
+import io.nekohasekai.sagernet.ktx.snackbar
 import moe.matsuri.nb4a.utils.WebViewUtil
 
 // Fragment必须有一个无参public的构造函数，否则在数据恢复的时候，会报crash
@@ -48,7 +51,20 @@ class WebviewFragment : ToolbarFragment(R.layout.layout_webview), Toolbar.OnMenu
                 super.onPageFinished(view, url)
             }
         }
-        mWebView.loadUrl(DataStore.yacdURL)
+        mWebView.loadUrl(dashboardUrl())
+    }
+
+    // the local Clash API requires a secret; yacd picks hostname/port/secret up from the query
+    private fun dashboardUrl(): String {
+        val uri = Uri.parse(DataStore.yacdURL)
+        if (uri.host != "127.0.0.1" || uri.port != 9090 || uri.getQueryParameter("secret") != null) {
+            return uri.toString()
+        }
+        return uri.buildUpon()
+            .appendQueryParameter("hostname", "127.0.0.1")
+            .appendQueryParameter("port", "9090")
+            .appendQueryParameter("secret", DataStore.clashApiSecret)
+            .build().toString()
     }
 
     @SuppressLint("CheckResult")
@@ -63,10 +79,15 @@ class WebviewFragment : ToolbarFragment(R.layout.layout_webview), Toolbar.OnMenu
                     .setView(view)
                     .setPositiveButton(android.R.string.ok) { _, _ ->
                         DataStore.yacdURL = view.text.toString()
-                        mWebView.loadUrl(DataStore.yacdURL)
+                        mWebView.loadUrl(dashboardUrl())
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
+            }
+            R.id.action_copy_secret -> {
+                if (SagerNet.trySetPrimaryClip(DataStore.clashApiSecret)) {
+                    snackbar(R.string.copy_success).show()
+                }
             }
             R.id.close -> {
                 mWebView.onPause()

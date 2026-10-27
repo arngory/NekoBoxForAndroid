@@ -38,6 +38,7 @@ import io.nekohasekai.sagernet.databinding.LayoutMainBinding
 import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.fmt.KryoConverters
 import io.nekohasekai.sagernet.fmt.PluginEntry
+import io.nekohasekai.sagernet.fmt.overridesFullConfig
 import io.nekohasekai.sagernet.group.GroupInterfaceAdapter
 import io.nekohasekai.sagernet.group.GroupUpdater
 import io.nekohasekai.sagernet.ktx.alert
@@ -224,7 +225,10 @@ class MainActivity : ThemedActivity(),
 
         onMainDispatcher {
             MaterialAlertDialogBuilder(this@MainActivity).setTitle(R.string.profile_import)
-                .setMessage(getString(R.string.profile_import_message, profile.displayName()))
+                .setMessage(getString(R.string.profile_import_message, profile.displayName()).let {
+                    // a web page can open this link: say so when it rewrites the whole config
+                    if (profile.overridesFullConfig()) it + "\n\n" + getString(R.string.profile_import_full_config_warning) else it
+                })
                 .setPositiveButton(R.string.yes) { _, _ ->
                     runOnDefaultDispatcher {
                         finishImportProfile(profile)

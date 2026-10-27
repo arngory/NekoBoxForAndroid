@@ -387,6 +387,7 @@
         being leaked.</string>
     <string name="profile_import">Import profile</string>
     <string name="profile_import_message">Confirm you want to import profile %s?</string>
+    <string name="profile_import_full_config_warning">Warning: this profile replaces or rewrites the whole sing-box config (local proxy, DNS, routing). Import it only if you trust the source.</string>
     <string name="clear_profiles_message">Are you sure you want to clear this group?</string>
     <string name="apps">Applications</string>
     <string name="select_apps">Select Applications</string>
@@ -528,7 +529,8 @@
     <string name="set_panel_url">Set panel URL</string>
     <string name="enable_clash_api">Enable Clash API</string>
     <string name="log_level">Log Level</string>
-    <string name="enable_clash_api_summary">Provide clash api and yacd dashboard at 127.0.0.1:9090</string>
+    <string name="enable_clash_api_summary">Provide clash api and yacd dashboard at 127.0.0.1:9090. The API is protected by a random secret, copy it from the dashboard menu for other clients</string>
+    <string name="copy_clash_api_secret">Copy API secret</string>
     <string name="xtls_flow">Flow (VLESS Sub-protocol)</string>
     <string name="ads">Ads</string>
     <string name="bypass_lan_in_core">Bypass LAN in Core</string>

@@ -29,9 +29,11 @@ import org.ini4j.Ini
 import org.json.JSONArray
 import org.json.JSONObject
 import org.json.JSONTokener
-import org.yaml.snakeyaml.TypeDescription
+import org.yaml.snakeyaml.LoaderOptions
 import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.constructor.SafeConstructor
 import org.yaml.snakeyaml.error.YAMLException
+import org.yaml.snakeyaml.nodes.Tag
 import java.io.StringReader
 import androidx.core.net.toUri
 
@@ -85,6 +87,17 @@ object RawUpdater : GroupUpdater() {
                         proxyGroup.name = remoteName
                     }
                 }
+            }
+        }
+
+        // the provider must not rewrite the whole local config (inbounds, DNS, Clash API) of the app
+        proxies = proxies.filter { bean ->
+            if (bean is ConfigBean && bean.type == 0) {
+                Logs.w("skip ${bean.displayName()}: a subscription can not ship a full sing-box config")
+                false
+            } else {
+                bean.customConfigJson = ""
+                true
             }
         }
 
@@ -240,17 +253,19 @@ object RawUpdater : GroupUpdater() {
 
             try {
 
-                val yaml = Yaml().apply {
-                    addTypeDescription(TypeDescription(String::class.java, "str"))
-                }.loadAs(text, Map::class.java)
+                val yaml = Yaml(ClashYamlConstructor()).load<Any?>(text) as? Map<*, *>
+                    ?: throw YAMLException("not a clash config")
 
                 val globalClientFingerprint = yaml["global-client-fingerprint"]?.toString() ?: ""
 
-                for (proxy in (yaml["proxies"] as? (List<Map<String, Any?>>) ?: error(
+                for (item in (yaml["proxies"] as? List<*> ?: error(
                     app.getString(R.string.no_proxies_found_in_file)
                 ))) {
+                    val proxy = item as? Map<String, Any?> ?: continue
                     // Note: YAML numbers parsed as "Long"
 
+                    // one broken entry must not drop the whole subscription
+                    try {
                     when (proxy["type"] as String) {
                         "socks5" -> {
                             proxies.add(SOCKSBean().apply {
@@ -661,6 +676,9 @@ object RawUpdater : GroupUpdater() {
                             proxies.add(bean)
                         }
                     }
+                    } catch (e: Exception) {
+                        Logs.w("skip clash proxy ${proxy["name"]}: $e")
+                    }
                 }
 
                 // Fix ent
@@ -813,4 +831,17 @@ object RawUpdater : GroupUpdater() {
         return proxies
     }
 
+}
+
+/**
+ * Builds only plain maps, lists and scalars: a global tag in a subscription must not
+ * instantiate arbitrary classes (CVE-2022-1471). The local "!str" tag is kept as a string.
+ */
+private class ClashYamlConstructor : SafeConstructor(LoaderOptions().apply {
+    codePointLimit = 64 * 1024 * 1024
+}) {
+    init {
+        yamlConstructors[Tag("str")] = yamlConstructors[Tag.STR]
+        yamlConstructors[Tag("!str")] = yamlConstructors[Tag.STR]
+    }
 }

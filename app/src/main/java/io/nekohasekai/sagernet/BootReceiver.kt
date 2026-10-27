@@ -23,6 +23,12 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        // the receiver is exported; only the system can send these protected broadcasts
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_LOCKED_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED -> {}
+            else -> return
+        }
         runOnDefaultDispatcher {
             SubscriptionUpdater.reconfigureUpdater()
         }

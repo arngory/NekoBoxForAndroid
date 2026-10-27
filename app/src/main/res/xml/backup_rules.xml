@@ -1,13 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Profiles hold server passwords and keys: keep them out of cloud backup, move them only
+     on a direct device-to-device transfer. Use the in-app backup for anything else. -->
 <data-extraction-rules xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="FullBackupContent">
     <cloud-backup>
-        <include
+        <exclude
+            domain="root"
+            path="." />
+        <exclude
+            domain="file"
+            path="." />
+        <exclude
             domain="database"
-            path="sager_net.db" />
-        <include
+            path="." />
+        <exclude
+            domain="sharedpref"
+            path="." />
+        <exclude
+            domain="external"
+            path="." />
+        <exclude
+            domain="device_root"
+            path="." />
+        <exclude
+            domain="device_file"
+            path="." />
+        <exclude
             domain="device_database"
-            path="configuration.db" />
+            path="." />
+        <exclude
+            domain="device_sharedpref"
+            path="." />
     </cloud-backup>
     <device-transfer>
         <include
