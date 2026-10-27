@@ -11,6 +11,10 @@ on:
         description: Fail when signing secrets are missing
         type: boolean
         default: false
+      lint:
+        description: Run Android lint (new issues beyond app/lint-baseline.xml fail the build)
+        type: boolean
+        default: false
     secrets:
       KEYSTORE_BASE64:
         required: false
@@ -37,7 +41,9 @@ jobs:
       - name: LibCore cache key
         id: key
         run: |
-          key=$(git ls-files -z buildScript libcore | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
+          # SingBoxOptions.java is checked against the core by libcore's options_drift_test.go
+          key=$(git ls-files -z buildScript libcore app/src/main/java/moe/matsuri/nb4a/SingBoxOptions.java \
+            | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
           echo "key=libcore-${NDK_VERSION}-${key}" >> "$GITHUB_OUTPUT"
 
       - name: LibCore cache
@@ -142,7 +148,17 @@ jobs:
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           [ -n "$KEYSTORE_FILE" ] || unset KEYSTORE_PASS ALIAS_NAME ALIAS_PASS
           ./run init action gradle
-          ./gradlew --no-daemon app:testOssReleaseUnitTest app:assembleOssRelease
+          tasks="app:testOssReleaseUnitTest app:assembleOssRelease"
+          [ "${{ inputs.lint }}" = "true" ] && tasks="$tasks app:lintOssRelease"
+          ./gradlew --no-daemon $tasks
+
+      - name: Upload lint report
+        if: ${{ inputs.lint && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/lint.html
+          if-no-files-found: ignore
 
       - name: Collect APKs
         run: |

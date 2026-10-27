@@ -24,3 +24,6 @@ jniLibs/
 *.jks.b64
 *.keystore.b64
 .kotlin/
+
+# signing keys stay out of git; local builds read release.keystore or KEYSTORE_FILE
+*.keystore

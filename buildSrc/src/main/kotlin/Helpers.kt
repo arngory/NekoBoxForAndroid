@@ -65,6 +65,10 @@ fun Project.setupCommon() {
             checkAllWarnings = true
             checkReleaseBuilds = true
             warningsAsErrors = true
+            // issues that predate CI lint; new code must be clean
+            baseline = project.file("lint-baseline.xml")
+            // these change whenever a library publishes a release, not when the code changes
+            disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
             textOutput = project.file("build/lint.txt")
             htmlOutput = project.file("build/lint.html")
         }

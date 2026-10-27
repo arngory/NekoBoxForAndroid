@@ -46,6 +46,25 @@ public class SingBoxOptionsTest {
     }
 
     @Test
+    public void serializesRuntimeTypeOfListElements() {
+        SingBoxOptions.Outbound_SocksOptions socks = new SingBoxOptions.Outbound_SocksOptions();
+        socks.type = "socks";
+        socks.tag = "proxy";
+        socks.server = "127.0.0.1";
+        socks.server_port = 1080;
+        socks._hack_custom_config = "{\"detour\": \"direct\"}";
+
+        SingBoxOptions.MyOptions options = new SingBoxOptions.MyOptions();
+        options.outbounds = Collections.singletonList(socks);
+
+        Map<?, ?> serialized = (Map<?, ?>) ((List<?>) options.asMap().get("outbounds")).get(0);
+        assertEquals("127.0.0.1", serialized.get("server"));
+        assertEquals(1080L, serialized.get("server_port"));
+        assertEquals("direct", serialized.get("detour"));
+        assertFalse(serialized.containsKey("_hack_custom_config"));
+    }
+
+    @Test
     public void serializesCustomOptionAndAppliesOverrides() {
         SingBoxOptions.CustomSingBoxOption option =
                 new SingBoxOptions.CustomSingBoxOption("{\"type\":\"direct\",\"tag\":\"custom\"}");
