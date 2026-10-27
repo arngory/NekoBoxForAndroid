@@ -13,7 +13,7 @@ import java.io.File
 // hysteria://host:port?auth=123456&peer=sni.domain&insecure=1|0&upmbps=100&downmbps=100&alpn=hysteria&obfs=xplus&obfsParam=123456#remarks
 fun parseHysteria1(url: String): HysteriaBean {
     val link = url.replace("hysteria://", "https://").toHttpUrlOrNull() ?: error(
-        "invalid hysteria link $url"
+        "invalid hysteria link"
     )
     return HysteriaBean().apply {
         protocolVersion = 1
@@ -62,14 +62,29 @@ fun parseHysteria1(url: String): HysteriaBean {
 
 // hysteria2://[auth@]hostname[:port]/?[key=value]&[key=value]...
 fun parseHysteria2(url: String): HysteriaBean {
-    val link = url
-        .replace("hysteria2://", "https://")
-        .replace("hy2://", "https://")
-        .toHttpUrlOrNull() ?: error("invalid hysteria link $url")
+    // the official format allows port hopping in the authority: hy2://auth@host:443,5000-6000/?...
+    var hopPorts: String? = null
+    var httpsUrl = url.replaceFirst(Regex("^(hysteria2|hy2)://"), "https://")
+    Regex("^https://([^/?#]*)").find(httpsUrl)?.let { match ->
+        val authority = match.groupValues[1]
+        val hostPort = authority.substringAfterLast('@')
+        val ports = if (hostPort.startsWith("[")) {
+            hostPort.substringAfter("]", "").removePrefix(":")
+        } else {
+            hostPort.substringAfterLast(':', "")
+        }
+        if (ports.contains(',') || ports.contains('-')) {
+            val firstPort = ports.split(',', '-').first().toIntOrNull() ?: error("invalid hysteria link")
+            hopPorts = ports
+            httpsUrl = "https://" + authority.removeSuffix(ports) + firstPort +
+                httpsUrl.substring(match.range.last + 1)
+        }
+    }
+    val link = httpsUrl.toHttpUrlOrNull() ?: error("invalid hysteria link")
     return HysteriaBean().apply {
         protocolVersion = 2
         serverAddress = link.host
-        serverPorts = link.port.toString()
+        serverPorts = hopPorts ?: link.port.toString()
         authPayload = if (link.password.isNotBlank()) {
             link.username + ":" + link.password
         } else {
@@ -95,9 +110,8 @@ fun parseHysteria2(url: String): HysteriaBean {
         link.queryParameter("obfs-password")?.also {
             obfuscation = it
         }
-//        link.queryParameter("pinSHA256")?.also {
-//            // TODO your box do not support it
-//        }
+        // pinSHA256 pins the hash of the whole certificate; sing-box can only pin the public key
+        // (certificate_public_key_sha256), so it can not be carried over
     }
 }
 
@@ -296,7 +310,7 @@ fun buildSingBoxOutboundHysteriaBean(bean: HysteriaBean): SingBoxOptions.SingBox
                 recv_window_conn = bean.streamReceiveWindow.toLong()
             }
             if (bean.connectionReceiveWindow > 0) {
-                recv_window_conn = bean.connectionReceiveWindow.toLong()
+                recv_window = bean.connectionReceiveWindow.toLong()
             }
             tls = SingBoxOptions.OutboundTLSOptions().apply {
                 if (bean.sni.isNotBlank()) {

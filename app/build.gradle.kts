@@ -42,6 +42,8 @@ dependencies {
 
     implementation(fileTree("libs"))
     testImplementation("junit:junit:4.13.2")
+    // android.jar only has stubs of org.json
+    testImplementation("org.json:json:20250517")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation("androidx.core:core-ktx:1.9.0")

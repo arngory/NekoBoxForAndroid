@@ -166,6 +166,12 @@ fun StandardV2RayBean.parseDuckSoft(url: HttpUrl) {
             url.queryParameter("allowInsecure")?.let {
                 allowInsecure = it == "1" || it == "true"
             }
+            url.queryParameter("insecure")?.let {
+                if (it == "1" || it == "true") allowInsecure = true
+            }
+            url.queryParameter("ech")?.takeIf { it.isNotBlank() }?.let {
+                applyEchParameter(it)
+            }
             url.queryParameter("sni")?.let {
                 sni = it
             }
@@ -252,6 +258,31 @@ fun StandardV2RayBean.parseDuckSoft(url: HttpUrl) {
     url.queryParameter("fp")?.let {
         utlsFingerprint = it
     }
+}
+
+private const val ECH_PEM_BEGIN = "-----BEGIN ECH CONFIGS-----"
+private const val ECH_PEM_END = "-----END ECH CONFIGS-----"
+
+/**
+ * Xray "ech" share parameter: a base64 ECHConfigList, or "<domain>+<DNS server>" to look it up.
+ * sing-box looks the config up over DNS by itself when none is given.
+ */
+fun StandardV2RayBean.applyEchParameter(value: String) {
+    enableECH = true
+    val config = value.replace(' ', '+') // an unescaped "+" in a query arrives as a space
+    if (!config.contains('.') && config.matches(Regex("[A-Za-z0-9+/=_-]{16,}"))) {
+        val base64 = config.replace('-', '+').replace('_', '/').trimEnd('=')
+        echConfig = ECH_PEM_BEGIN + "\n" + base64 + "=".repeat((4 - base64.length % 4) % 4) +
+            "\n" + ECH_PEM_END
+    }
+}
+
+/** The base64 ECHConfigList of [StandardV2RayBean.echConfig] for a share link, or null. */
+fun StandardV2RayBean.echShareParameter(): String? {
+    val config = echConfig
+    if (enableECH != true || config == null || !config.contains(ECH_PEM_BEGIN)) return null
+    return config.substringAfter(ECH_PEM_BEGIN).substringBefore(ECH_PEM_END)
+        .lines().joinToString("") { it.trim() }.takeIf { it.isNotEmpty() }
 }
 
 // 不确定是谁的格式
@@ -493,6 +524,9 @@ fun StandardV2RayBean.toUriVMessVLESSTrojan(isTrojan: Boolean): String {
                 }
                 if (utlsFingerprint.isNotBlank()) {
                     builder.addQueryParameter("fp", utlsFingerprint)
+                }
+                echShareParameter()?.let {
+                    builder.addQueryParameter("ech", it)
                 }
                 if (realityPubKey.isNotBlank()) {
                     builder.setQueryParameter("security", "reality")

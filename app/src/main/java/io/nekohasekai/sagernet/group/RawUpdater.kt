@@ -253,8 +253,7 @@ object RawUpdater : GroupUpdater() {
 
             try {
 
-                val yaml = Yaml(ClashYamlConstructor()).load<Any?>(text) as? Map<*, *>
-                    ?: throw YAMLException("not a clash config")
+                val yaml = loadClashYaml(text)
 
                 val globalClientFingerprint = yaml["global-client-fingerprint"]?.toString() ?: ""
 
@@ -307,7 +306,7 @@ object RawUpdater : GroupUpdater() {
                                         ssPlugin.apply {
                                             add("v2ray-plugin")
                                             add("mode=" + (opts["mode"]?.toString() ?: ""))
-                                            if (opts["mode"]?.toString() == "true") add("tls")
+                                            if (opts["tls"]?.toString() == "true") add("tls")
                                             add("host=" + (opts["host"]?.toString() ?: ""))
                                             add("path=" + (opts["path"]?.toString() ?: ""))
                                             if (opts["mux"]?.toString() == "true") add("mux=8")
@@ -789,6 +788,14 @@ object RawUpdater : GroupUpdater() {
                     return listOf(json.parseTrojanGo())
                 }
 
+                // SIP008 online configuration: {"version": 1, "servers": [...]}
+                json.optJSONArray("servers") != null -> {
+                    return json.getJSONArray("servers")
+                        .filterIsInstance<JSONObject>()
+                        .filter { it.has("server") && it.has("method") }
+                        .map { it.parseShadowsocks().apply { initializeDefaultValues() } }
+                }
+
                 json.has("outbounds") -> {
                     return json.getJSONArray("outbounds")
                         .filterIsInstance<JSONObject>()
@@ -832,6 +839,11 @@ object RawUpdater : GroupUpdater() {
     }
 
 }
+
+/** Loads a clash config; throws [YAMLException] for anything but a mapping of plain values. */
+internal fun loadClashYaml(text: String): Map<*, *> =
+    Yaml(ClashYamlConstructor()).load<Any?>(text) as? Map<*, *>
+        ?: throw YAMLException("not a clash config")
 
 /**
  * Builds only plain maps, lists and scalars: a global tag in a subscription must not
