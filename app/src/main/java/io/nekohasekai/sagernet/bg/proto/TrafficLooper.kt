@@ -31,7 +31,7 @@ class TrafficLooper
                 val item = idMap[ent.id] ?: return@forEach
                 ent.rx = item.rx
                 ent.tx = item.tx
-                ProfileManager.updateProfile(ent) // update DB
+                ProfileManager.updateTraffic(ent) // update DB
                 traffic[ent.id] = TrafficData(
                     id = ent.id,
                     rx = ent.rx,
@@ -67,7 +67,7 @@ class TrafficLooper
                     it.rx = rx
                     it.tx = tx
                     runOnDefaultDispatcher {
-                        ProfileManager.updateProfile(it) // update DB
+                        ProfileManager.updateTraffic(it) // update DB
                     }
                 }
             }
@@ -100,7 +100,10 @@ class TrafficLooper
             }
 
             if (trafficUpdater == null) {
-                if (!proxy.isInitialized()) continue
+                if (!proxy.isInitialized()) {
+                    delay(delayMs) // the config is still being built
+                    continue
+                }
                 idMap.clear()
                 idMap[-1] = itemBypass
                 //

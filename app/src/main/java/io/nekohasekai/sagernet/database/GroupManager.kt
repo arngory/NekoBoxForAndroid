@@ -64,7 +64,7 @@ object GroupManager {
         for (index in entities.indices) {
             entities[index].userOrder = (index + 1).toLong()
         }
-        SagerDatabase.proxyDao.updateProxy(entities)
+        entities.forEach { SagerDatabase.proxyDao.updateOrder(it.id, it.userOrder) }
     }
 
     suspend fun postUpdate(group: ProxyGroup) {

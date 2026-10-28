@@ -90,6 +90,23 @@ object ProfileManager {
         iterator { onUpdated(profile, false) }
     }
 
+    /** Stores only tx/rx of [profile]; the rest of the row may have been edited since it was read. */
+    suspend fun updateTraffic(profile: ProxyEntity) {
+        SagerDatabase.proxyDao.updateTraffic(profile.id, profile.tx, profile.rx)
+        notifyStored(profile.id)
+    }
+
+    /** Stores only status/ping/error of [profile], see [updateTraffic]. */
+    suspend fun updateTestResult(profile: ProxyEntity) {
+        SagerDatabase.proxyDao.updateTestResult(profile.id, profile.status, profile.ping, profile.error)
+        notifyStored(profile.id)
+    }
+
+    private suspend fun notifyStored(id: Long) {
+        val stored = SagerDatabase.proxyDao.getById(id) ?: return
+        iterator { onUpdated(stored, false) }
+    }
+
     suspend fun updateProfile(profiles: List<ProxyEntity>) {
         SagerDatabase.proxyDao.updateProxy(profiles)
         profiles.forEach {

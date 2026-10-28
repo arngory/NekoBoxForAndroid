@@ -160,7 +160,7 @@ class BackupFragment : NamedFragment(R.layout.layout_backup) {
             if (setting) {
                 put("settings", JSONArray().apply {
                     PublicDatabase.kvPairDao.all().forEach {
-                        put(it.toBase64Str())
+                        if (it.key !in DataStore.installSecretKeys) put(it.toBase64Str())
                     }
                 })
             }
@@ -317,8 +317,10 @@ class BackupFragment : NamedFragment(R.layout.layout_backup) {
                 settings.add(KeyValuePair.CREATOR.createFromParcel(parcel))
                 parcel.recycle()
             }
+            // keep this installation's own secrets; backups from 1.5.1 still carry the old device's
+            val ownSecrets = DataStore.installSecretKeys.mapNotNull { PublicDatabase.kvPairDao[it] }
             PublicDatabase.kvPairDao.reset()
-            PublicDatabase.kvPairDao.insert(settings)
+            PublicDatabase.kvPairDao.insert(settings.filter { it.key !in DataStore.installSecretKeys } + ownSecrets)
         }
     }
 

@@ -7,6 +7,7 @@ import android.util.Log
 import com.jakewharton.processphoenix.ProcessPhoenix
 import io.nekohasekai.sagernet.BuildConfig
 import io.nekohasekai.sagernet.SagerNet
+import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.preference.PublicDatabase
 import io.nekohasekai.sagernet.ktx.Logs
 import io.nekohasekai.sagernet.ktx.app
@@ -101,7 +102,8 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
             report += "Settings: \n"
             for (pair in PublicDatabase.kvPairDao.all()) {
                 report += "\n"
-                report += pair.key + ": " + pair.toString()
+                // the report is meant to be shared: keep passwords and tokens out of it
+                report += pair.key + ": " + if (DataStore.isSensitiveKey(pair.key)) "<redacted>" else pair.toString()
             }
         } catch (e: Exception) {
             report += "Export settings failed: " + formatThrowable(e)

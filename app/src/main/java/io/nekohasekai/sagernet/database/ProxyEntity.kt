@@ -524,6 +524,18 @@ data class ProxyEntity(
         @Update
         fun updateProxy(proxies: List<ProxyEntity>): Int
 
+        // Narrow updates for data written in the background: a full @Update of an older copy
+        // would overwrite profile edits saved in the meantime.
+
+        @Query("UPDATE proxy_entities SET tx = :tx, rx = :rx WHERE id = :id")
+        fun updateTraffic(id: Long, tx: Long, rx: Long): Int
+
+        @Query("UPDATE proxy_entities SET status = :status, ping = :ping, error = :error WHERE id = :id")
+        fun updateTestResult(id: Long, status: Int, ping: Int, error: String?): Int
+
+        @Query("UPDATE proxy_entities SET userOrder = :userOrder WHERE id = :id")
+        fun updateOrder(id: Long, userOrder: Long): Int
+
         @Insert
         fun addProxy(proxy: ProxyEntity): Long
 

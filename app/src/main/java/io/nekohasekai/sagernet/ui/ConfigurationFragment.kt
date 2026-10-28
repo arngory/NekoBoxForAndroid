@@ -468,9 +468,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                             toClear.add(profile)
                         }
                     }
-                    if (toClear.isNotEmpty()) {
-                        ProfileManager.updateProfile(toClear)
-                    }
+                    toClear.forEach { ProfileManager.updateTraffic(it) }
                 }
             }
 
@@ -486,9 +484,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                             toClear.add(profile)
                         }
                     }
-                    if (toClear.isNotEmpty()) {
-                        ProfileManager.updateProfile(toClear)
-                    }
+                    toClear.forEach { ProfileManager.updateTestResult(it) }
                 }
             }
 
@@ -756,6 +752,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                                     if (!isActive) break
                                     profile.status = 1
                                     profile.ping = (SystemClock.elapsedRealtime() - start).toInt()
+                                    profile.error = null
                                     test.update(profile)
                                 } finally {
                                     socket.closeQuietly()
@@ -806,13 +803,14 @@ class ConfigurationFragment @JvmOverloads constructor(
         }
         test.cancel = {
             test.dialogStatus.set(2)
-            dialog.dismiss()
+            // the activity may have been recreated while the test ran minimized
+            runCatching { if (dialog.isShowing) dialog.dismiss() }
             runOnDefaultDispatcher {
                 mainJob.cancel()
                 testJobs.forEach { it.cancel() }
                 test.results.forEach {
                     try {
-                        ProfileManager.updateProfile(it)
+                        ProfileManager.updateTestResult(it)
                     } catch (e: Exception) {
                         Logs.w(e)
                     }
@@ -854,6 +852,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                             val result = urlTest.doTest(profile)
                             profile.status = 1
                             profile.ping = result
+                            profile.error = null
                         } catch (e: PluginManager.PluginNotFoundException) {
                             profile.status = 2
                             profile.error = e.readableMessage
@@ -875,13 +874,14 @@ class ConfigurationFragment @JvmOverloads constructor(
         }
         test.cancel = {
             test.dialogStatus.set(2)
-            dialog.dismiss()
+            // the activity may have been recreated while the test ran minimized
+            runCatching { if (dialog.isShowing) dialog.dismiss() }
             runOnDefaultDispatcher {
                 mainJob.cancel()
                 testJobs.forEach { it.cancel() }
                 test.results.forEach {
                     try {
-                        ProfileManager.updateProfile(it)
+                        ProfileManager.updateTestResult(it)
                     } catch (e: Exception) {
                         Logs.w(e)
                     }
@@ -1311,7 +1311,8 @@ class ConfigurationFragment @JvmOverloads constructor(
             }
 
             fun commitMove() = runOnDefaultDispatcher {
-                updated.forEach { SagerDatabase.proxyDao.updateProxy(it) }
+                // the list holds copies read when it was shown: write the order only
+                updated.forEach { SagerDatabase.proxyDao.updateOrder(it.id, it.userOrder) }
                 updated.clear()
             }
 

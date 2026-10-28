@@ -141,15 +141,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var localProxyNoAuthInVpn by configurationStore.boolean(Key.LOCAL_PROXY_NO_AUTH_IN_VPN)
 
     // credentials the app itself uses for the local proxy, never shown to the user
-    val localProxyPassword: String
-        get() {
-            configurationStore.getString("localProxyPassword")?.takeIf { it.isNotEmpty() }?.let { return it }
-            val random = java.security.SecureRandom()
-            val alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-            val password = (1..32).map { alphabet[random.nextInt(alphabet.length)] }.joinToString("")
-            configurationStore.putString("localProxyPassword", password)
-            return password
-        }
+    val localProxyPassword get() = persistentToken("localProxyPassword")
 
     fun initGlobal() {
         if (configurationStore.getString(Key.MIXED_PORT) == null) {
@@ -190,6 +182,13 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     // every app on the device can reach 127.0.0.1, so the Clash API and exported shortcuts need a token
     val clashApiSecret get() = persistentToken("clashApiSecret")
     val shortcutToken get() = persistentToken("shortcutToken")
+
+    /** Secrets of this installation: not exported, not restored from another device's backup. */
+    val installSecretKeys = setOf("localProxyPassword", "clashApiSecret", "shortcutToken")
+
+    /** Settings whose values must not appear in logs or crash reports. */
+    fun isSensitiveKey(key: String) = key in installSecretKeys ||
+        Regex("password|secret|token|psk|private", RegexOption.IGNORE_CASE).containsMatchIn(key)
 
     // main and :bg may both start without a token: insert-or-ignore lets the first one win for both
     private fun persistentToken(key: String): String {
