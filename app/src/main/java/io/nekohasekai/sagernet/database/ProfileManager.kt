@@ -90,21 +90,31 @@ object ProfileManager {
         iterator { onUpdated(profile, false) }
     }
 
-    /** Stores only tx/rx of [profile]; the rest of the row may have been edited since it was read. */
-    suspend fun updateTraffic(profile: ProxyEntity) {
-        SagerDatabase.proxyDao.updateTraffic(profile.id, profile.tx, profile.rx)
-        notifyStored(profile.id)
+    /** Stores only tx/rx of [profiles]; the rest of a row may have been edited since it was read. */
+    suspend fun updateTraffic(vararg profiles: ProxyEntity) = updateTraffic(profiles.asList())
+
+    suspend fun updateTraffic(profiles: Collection<ProxyEntity>) {
+        SagerDatabase.instance.runInTransaction {
+            profiles.forEach { SagerDatabase.proxyDao.updateTraffic(it.id, it.tx, it.rx) }
+        }
+        notifyStored(profiles)
     }
 
-    /** Stores only status/ping/error of [profile], see [updateTraffic]. */
-    suspend fun updateTestResult(profile: ProxyEntity) {
-        SagerDatabase.proxyDao.updateTestResult(profile.id, profile.status, profile.ping, profile.error)
-        notifyStored(profile.id)
+    /** Stores only status/ping/error of [profiles], see [updateTraffic]. */
+    suspend fun updateTestResult(profiles: Collection<ProxyEntity>) {
+        SagerDatabase.instance.runInTransaction {
+            profiles.forEach {
+                SagerDatabase.proxyDao.updateTestResult(it.id, it.status, it.ping, it.error)
+            }
+        }
+        notifyStored(profiles)
     }
 
-    private suspend fun notifyStored(id: Long) {
-        val stored = SagerDatabase.proxyDao.getById(id) ?: return
-        iterator { onUpdated(stored, false) }
+    private suspend fun notifyStored(profiles: Collection<ProxyEntity>) {
+        if (profiles.isEmpty()) return
+        SagerDatabase.proxyDao.getEntities(profiles.map { it.id }).forEach { stored ->
+            iterator { onUpdated(stored, false) }
+        }
     }
 
     suspend fun updateProfile(profiles: List<ProxyEntity>) {

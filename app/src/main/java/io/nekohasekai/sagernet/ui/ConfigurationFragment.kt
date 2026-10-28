@@ -18,7 +18,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.os.BundleCompat
 import androidx.core.os.bundleOf
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.PopupMenu
@@ -127,20 +126,25 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     // Kept in the arguments: after recreation the fragment is built with the no-arg constructor,
     // and losing "select" made it cast a ProfileSelectActivity to MainActivity.
+    // Only ids: the whole entity (a custom config can be large) would go into the saved state.
     init {
         if (select) arguments = bundleOf(
-            ARG_SELECT to true, ARG_SELECTED_ITEM to selectedItem, ARG_TITLE_RES to titleRes
+            ARG_SELECT to true,
+            ARG_SELECTED_ID to (selectedItem?.id ?: -1L),
+            ARG_SELECTED_GROUP to (selectedItem?.groupId ?: -1L),
+            ARG_TITLE_RES to titleRes,
         )
     }
 
     val select get() = arguments?.getBoolean(ARG_SELECT) ?: false
-    val selectedItem
-        get() = arguments?.let { BundleCompat.getParcelable(it, ARG_SELECTED_ITEM, ProxyEntity::class.java) }
+    val selectedId get() = arguments?.getLong(ARG_SELECTED_ID, -1L)?.takeIf { it >= 0 }
+    val selectedGroupId get() = arguments?.getLong(ARG_SELECTED_GROUP, -1L)?.takeIf { it >= 0 }
     val titleRes get() = arguments?.getInt(ARG_TITLE_RES) ?: 0
 
     companion object {
         private const val ARG_SELECT = "select"
-        private const val ARG_SELECTED_ITEM = "selected_item"
+        private const val ARG_SELECTED_ID = "selected_id"
+        private const val ARG_SELECTED_GROUP = "selected_group"
         private const val ARG_TITLE_RES = "title_res"
     }
 
@@ -241,7 +245,7 @@ class ConfigurationFragment @JvmOverloads constructor(
             val fragment = getCurrentGroupFragment()
 
             if (fragment != null) {
-                val selectedProxy = selectedItem?.id ?: DataStore.selectedProxy
+                val selectedProxy = selectedId ?: DataStore.selectedProxy
                 val selectedProfileIndex =
                     fragment.adapter!!.configurationIdList.indexOf(selectedProxy)
                 if (selectedProfileIndex != -1) {
@@ -489,7 +493,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                             toClear.add(profile)
                         }
                     }
-                    toClear.forEach { ProfileManager.updateTraffic(it) }
+                    ProfileManager.updateTraffic(toClear)
                 }
             }
 
@@ -505,7 +509,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                             toClear.add(profile)
                         }
                     }
-                    toClear.forEach { ProfileManager.updateTestResult(it) }
+                    ProfileManager.updateTestResult(toClear)
                 }
             }
 
@@ -829,12 +833,10 @@ class ConfigurationFragment @JvmOverloads constructor(
             runOnDefaultDispatcher {
                 mainJob.cancel()
                 testJobs.forEach { it.cancel() }
-                test.results.forEach {
-                    try {
-                        ProfileManager.updateTestResult(it)
-                    } catch (e: Exception) {
-                        Logs.w(e)
-                    }
+                try {
+                    ProfileManager.updateTestResult(test.results.toList())
+                } catch (e: Exception) {
+                    Logs.w(e)
                 }
                 GroupManager.postReload(DataStore.currentGroupId())
                 DataStore.runningTest = false
@@ -900,12 +902,10 @@ class ConfigurationFragment @JvmOverloads constructor(
             runOnDefaultDispatcher {
                 mainJob.cancel()
                 testJobs.forEach { it.cancel() }
-                test.results.forEach {
-                    try {
-                        ProfileManager.updateTestResult(it)
-                    } catch (e: Exception) {
-                        Logs.w(e)
-                    }
+                try {
+                    ProfileManager.updateTestResult(test.results.toList())
+                } catch (e: Exception) {
+                    Logs.w(e)
                 }
                 GroupManager.postReload(DataStore.currentGroupId())
                 DataStore.runningTest = false
@@ -947,7 +947,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                     }
                 }
 
-                var selectedGroup = selectedItem?.groupId ?: DataStore.currentGroupId()
+                var selectedGroup = selectedGroupId ?: DataStore.currentGroupId()
                 var set = false
                 if (selectedGroup > 0L) {
                     selectedGroupIndex = newGroupList.indexOfFirst { it.id == selectedGroup }
@@ -1104,9 +1104,9 @@ class ConfigurationFragment @JvmOverloads constructor(
                 false
             }
         }
-        val selectedItem by lazy {
+        val selectedId by lazy {
             try {
-                (parentFragment as ConfigurationFragment).selectedItem
+                (parentFragment as ConfigurationFragment).selectedId
             } catch (e: Exception) {
                 Logs.e(e)
                 null
@@ -1333,7 +1333,9 @@ class ConfigurationFragment @JvmOverloads constructor(
 
             fun commitMove() = runOnDefaultDispatcher {
                 // the list holds copies read when it was shown: write the order only
-                updated.forEach { SagerDatabase.proxyDao.updateOrder(it.id, it.userOrder) }
+                SagerDatabase.instance.runInTransaction {
+                    updated.forEach { SagerDatabase.proxyDao.updateOrder(it.id, it.userOrder) }
+                }
                 updated.clear()
             }
 
@@ -1467,7 +1469,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                 var selectedProfileIndex = -1
 
                 if (selected) {
-                    val selectedProxy = selectedItem?.id ?: DataStore.selectedProxy
+                    val selectedProxy = selectedId ?: DataStore.selectedProxy
                     selectedProfileIndex = newProfileIds.indexOf(selectedProxy)
                 }
 
@@ -1639,7 +1641,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                 }
 
                 runOnDefaultDispatcher {
-                    val selected = (selectedItem?.id ?: DataStore.selectedProxy) == proxyEntity.id
+                    val selected = (selectedId ?: DataStore.selectedProxy) == proxyEntity.id
                     val started =
                         selected && DataStore.serviceState.started && DataStore.currentProfile == proxyEntity.id
                     onMainDispatcher {

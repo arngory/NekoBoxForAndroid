@@ -208,18 +208,12 @@ class ServiceNotification(
     @RequiresApi(34)
     private fun startForegroundTyped(notification: Notification) {
         val proxyService = service as Service
-        // systemExempted is allowed only to an app holding the VPN consent
-        val hasVpnConsent = service is VpnService ||
-                android.net.VpnService.prepare(proxyService) == null
-        if (!hasVpnConsent) {
-            proxyService.startForeground(notificationId, notification, FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-            return
-        }
+        // systemExempted is allowed only to an app holding the VPN consent. Do not check it with
+        // VpnService.prepare(): for a pre-consented app that call takes over and disconnects the
+        // VPN of another app. Try it and fall back to specialUse, which only ProxyService declares.
         try {
             proxyService.startForeground(notificationId, notification, FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
         } catch (e: SecurityException) {
-            // the consent can be revoked between the check and the call; only ProxyService
-            // declares specialUse, the VPN service can not run without the consent anyway
             if (service is VpnService) throw e
             proxyService.startForeground(notificationId, notification, FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         }
