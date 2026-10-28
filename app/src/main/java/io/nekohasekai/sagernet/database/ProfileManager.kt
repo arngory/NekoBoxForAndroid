@@ -112,9 +112,9 @@ object ProfileManager {
 
     private suspend fun notifyStored(profiles: Collection<ProxyEntity>) {
         if (profiles.isEmpty()) return
-        SagerDatabase.proxyDao.getEntities(profiles.map { it.id }).forEach { stored ->
-            iterator { onUpdated(stored, false) }
-        }
+        // SQLite before 3.32 (Android 11 and older) binds at most 999 variables per query
+        profiles.map { it.id }.chunked(900).flatMap { SagerDatabase.proxyDao.getEntities(it) }
+            .forEach { stored -> iterator { onUpdated(stored, false) } }
     }
 
     suspend fun updateProfile(profiles: List<ProxyEntity>) {
