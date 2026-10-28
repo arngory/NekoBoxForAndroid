@@ -455,6 +455,12 @@ fun buildConfig(
                 if (!proxyEntity.needExternal() && !bean.certPins.isNullOrBlank() &&
                     outboundType in TLS_PIN_TYPES
                 ) {
+                    // a pin on a profile without TLS would be silently ignored
+                    val tlsEnabled = (currentOutbound.asMap()["tls"] as? Map<*, *>)
+                        ?.get("enabled") == true
+                    if (!tlsEnabled) {
+                        throw Exception("Certificate pinning (${bean.displayName()}): the profile does not use TLS")
+                    }
                     tlsTweaks["certificate_public_key_sha256"] = parseCertificatePins(bean.certPins)
                     // the pin replaces CA verification; sing-box rejects it next to a custom CA
                     tlsTweaks["certificate"] = emptyList<String>()

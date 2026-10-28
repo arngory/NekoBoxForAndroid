@@ -40,7 +40,9 @@ fun buildSingBoxEndpointWireguardBean(bean: WireGuardBean): SingBoxOptions.Endpo
             allowed_ips = listOf("0.0.0.0/0", "::/0")
             if (bean.reserved.isNotBlank()) reserved = genReserved(bean.reserved)
             // keeps the NAT mapping (and the server's conntrack entry) alive while idle
-            if (bean.persistentKeepalive > 0) persistent_keepalive_interval = bean.persistentKeepalive
+            if (bean.persistentKeepalive > 0) {
+                persistent_keepalive_interval = bean.persistentKeepalive.coerceAtMost(65535) // uint16
+            }
         })
     }
 }

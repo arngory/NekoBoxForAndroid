@@ -41,4 +41,13 @@ class SubscriptionHeadersTest {
         assertNull(parseSubscriptionUserinfo("upload=0; download=0; total=0; expire=0"))
         assertNull(parseSubscriptionUserinfo(""))
     }
+
+    @Test
+    fun deviceIdPerProvider() {
+        val a = subscriptionDeviceId("secret", "https://a.example/sub/1")
+        assertEquals(32, a.length)
+        assertEquals(a, subscriptionDeviceId("secret", "https://A.example/sub/other"))
+        assertTrue(a != subscriptionDeviceId("secret", "https://b.example/sub/1"))
+        assertTrue(a != subscriptionDeviceId("other", "https://a.example/sub/1"))
+    }
 }

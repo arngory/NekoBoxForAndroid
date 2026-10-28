@@ -68,8 +68,9 @@ public class SubscriptionBean extends Serializable {
         output.writeString(announce == null ? "" : announce);
     }
 
+    // sendHwid is not shared: a received link must not make the app send device ids
     public void serializeForShare(ByteBufferOutput output) {
-        output.writeInt(1);
+        output.writeInt(0);
 
         output.writeInt(type);
 
@@ -79,8 +80,6 @@ public class SubscriptionBean extends Serializable {
         output.writeBoolean(deduplication);
         output.writeBoolean(updateWhenConnectedOnly);
         output.writeString(customUserAgent);
-
-        output.writeBoolean(Boolean.TRUE.equals(sendHwid));
     }
 
     @Override
@@ -113,10 +112,6 @@ public class SubscriptionBean extends Serializable {
         deduplication = input.readBoolean();
         updateWhenConnectedOnly = input.readBoolean();
         customUserAgent = input.readString();
-
-        if (version >= 1) {
-            sendHwid = input.readBoolean();
-        }
     }
 
     @Override

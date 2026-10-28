@@ -183,7 +183,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
 
     // every app on the device can reach 127.0.0.1, so the Clash API and exported shortcuts need a token
     val clashApiSecret get() = persistentToken("clashApiSecret")
-    /** Random device id for subscription panels that limit devices (x-hwid), not the Android ID. */
+    /** Random secret the per-provider x-hwid is derived from (never the Android ID). */
     val subscriptionHwid get() = persistentToken("subscriptionHwid")
     val shortcutToken get() = persistentToken("shortcutToken")
 

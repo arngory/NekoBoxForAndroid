@@ -76,7 +76,7 @@ object RawUpdater : GroupUpdater() {
                 setUserAgent(subscription.customUserAgent.takeIf { it.isNotBlank() } ?: USER_AGENT)
                 // panels that limit devices (Remnawave, Marzban) identify them by these headers
                 if (subscription.sendHwid) {
-                    setHeader("x-hwid", DataStore.subscriptionHwid)
+                    setHeader("x-hwid", subscriptionDeviceId(DataStore.subscriptionHwid, subscription.link))
                     setHeader("x-device-os", "Android")
                     setHeader("x-ver-os", Build.VERSION.RELEASE)
                     setHeader("x-device-model", Build.MODEL)
@@ -791,7 +791,8 @@ object RawUpdater : GroupUpdater() {
             peerBean.serverPort = endpoint.substringAfterLast(":").toIntOrNull() ?: continue
             peerBean.peerPublicKey = peer["PublicKey"] ?: continue
             peerBean.peerPreSharedKey = peer["PresharedKey"]
-            peerBean.persistentKeepalive = peer["PersistentKeepalive"]?.trim()?.toIntOrNull() ?: 0
+            peerBean.persistentKeepalive =
+                peer["PersistentKeepalive"]?.trim()?.toIntOrNull()?.coerceIn(0, 65535) ?: 0
             beans.add(peerBean.applyDefaultValues())
         }
         if (beans.isEmpty()) error("Empty available peer list")

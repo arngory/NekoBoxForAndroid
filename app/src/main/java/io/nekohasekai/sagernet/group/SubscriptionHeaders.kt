@@ -1,6 +1,9 @@
 package io.nekohasekai.sagernet.group
 
 import okio.ByteString.Companion.decodeBase64
+import java.net.URI
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 /** A text subscription header (profile-title, announce): plain or "base64:<data>". */
 fun decodeSubscriptionHeader(value: String?): String {
@@ -33,4 +36,19 @@ fun parseSubscriptionUserinfo(header: String?): SubscriptionUsage? {
         expire = value("expire"),
     )
     return usage.takeIf { it.used > 0 || it.total > 0 || it.expire > 0 }
+}
+
+/**
+ * x-hwid for one provider: HMAC of the install secret and the subscription host, so providers
+ * can not link the same device across subscriptions while each sees a stable id.
+ */
+fun subscriptionDeviceId(installSecret: String, subscriptionLink: String): String {
+    val host = try {
+        URI(subscriptionLink).host
+    } catch (_: Exception) {
+        null
+    } ?: subscriptionLink
+    val mac = Mac.getInstance("HmacSHA256")
+    mac.init(SecretKeySpec(installSecret.toByteArray(), "HmacSHA256"))
+    return mac.doFinal(host.lowercase().toByteArray()).take(16).joinToString("") { "%02x".format(it) }
 }
