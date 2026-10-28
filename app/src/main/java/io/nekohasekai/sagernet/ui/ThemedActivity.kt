@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.widget.TextView
+import androidx.activity.addCallback
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -74,4 +75,20 @@ abstract class ThemedActivity : AppCompatActivity {
 
     internal open fun snackbarInternal(text: CharSequence): Snackbar = throw NotImplementedError()
 
+
+    /**
+     * Back asks [confirm] first while [hasUnsavedChanges]. A callback instead of onBackPressed(),
+     * which is no longer called with predictive back (targetSdk 36).
+     */
+    protected fun confirmUnsavedChangesOnBack(hasUnsavedChanges: () -> Boolean, confirm: () -> Unit) {
+        onBackPressedDispatcher.addCallback(this) {
+            if (hasUnsavedChanges()) {
+                confirm()
+            } else {
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+                isEnabled = true
+            }
+        }
+    }
 }

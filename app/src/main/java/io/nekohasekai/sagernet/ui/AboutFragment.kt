@@ -246,13 +246,16 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                     }
                     val releaseTag = release?.optString("tag_name").orEmpty()
                     val releaseName = release?.optString("name").orEmpty().ifBlank { releaseTag }
+                    // open only release pages of this repository, whatever the API returned
                     val releaseUrl = release?.optString("html_url").orEmpty()
+                        .takeIf { it.startsWith("https://github.com/$RELEASE_REPO/releases/") }.orEmpty()
                     // offer only strictly newer versions: a beta user is not sent back to stable
                     val haveUpdate = releaseTag.isNotBlank() && releaseUrl.isNotBlank() &&
                             isNewerVersion(releaseTag, BuildConfig.VERSION_NAME)
                     runOnMainDispatcher {
+                        // the user may have left the screen while the request ran
+                        val context = context ?: return@runOnMainDispatcher
                         if (haveUpdate) {
-                            val context = requireContext()
                             MaterialAlertDialogBuilder(context)
                                 .setTitle(R.string.update_dialog_title)
                                 .setMessage(

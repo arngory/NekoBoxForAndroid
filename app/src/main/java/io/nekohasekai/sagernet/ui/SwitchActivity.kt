@@ -15,7 +15,8 @@ class SwitchActivity : ThemedActivity(R.layout.layout_empty),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        supportFragmentManager.beginTransaction()
+        // after recreation the fragment manager restores the fragment with its arguments
+        if (savedInstanceState == null) supportFragmentManager.beginTransaction()
             .replace(
                 R.id.fragment_holder,
                 ConfigurationFragment(true, null, R.string.action_switch)

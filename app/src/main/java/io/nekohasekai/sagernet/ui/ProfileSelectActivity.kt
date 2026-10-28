@@ -18,7 +18,8 @@ class ProfileSelectActivity : ThemedActivity(R.layout.layout_empty),
 
         val selected = intent.getParcelableExtra<ProxyEntity>(EXTRA_SELECTED)
 
-        supportFragmentManager.beginTransaction()
+        // after recreation the fragment manager restores the fragment with its arguments
+        if (savedInstanceState == null) supportFragmentManager.beginTransaction()
             .replace(
                 R.id.fragment_holder,
                 ConfigurationFragment(true, selected, R.string.select_profile)

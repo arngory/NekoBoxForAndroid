@@ -53,6 +53,9 @@ class ConfigEditActivity : ThemedActivity() {
     @SuppressLint("InlinedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        confirmUnsavedChangesOnBack({ dirty }) {
+            UnsavedChangesDialogFragment().apply { key() }.show(supportFragmentManager, null)
+        }
 
         intent?.extras?.apply {
             getString("key")?.let { key = it }
@@ -163,11 +166,6 @@ class ConfigEditActivity : ThemedActivity() {
             }
             finish()
         }
-    }
-
-    override fun onBackPressed() {
-        if (dirty) UnsavedChangesDialogFragment().apply { key() }
-            .show(supportFragmentManager, null) else super.onBackPressed()
     }
 
     override fun onSupportNavigateUp(): Boolean {

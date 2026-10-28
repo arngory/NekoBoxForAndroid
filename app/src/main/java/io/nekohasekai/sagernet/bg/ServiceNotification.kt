@@ -6,10 +6,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
 import android.os.Build
 import android.text.format.Formatter
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import io.nekohasekai.sagernet.Action
@@ -19,7 +19,9 @@ import io.nekohasekai.sagernet.aidl.SpeedDisplayData
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.ProxyEntity
 import io.nekohasekai.sagernet.database.SagerDatabase
+import io.nekohasekai.sagernet.ktx.Logs
 import io.nekohasekai.sagernet.ktx.app
+import io.nekohasekai.sagernet.ktx.readableMessage
 import io.nekohasekai.sagernet.ktx.getColorAttr
 import io.nekohasekai.sagernet.ktx.runOnMainDispatcher
 import io.nekohasekai.sagernet.ui.SwitchActivity
@@ -188,20 +190,23 @@ class ServiceNotification(
         useBuilder {
             try {
                 if (Build.VERSION.SDK_INT >= 34) {
+                    // systemExempted is allowed only to an app holding the VPN consent
+                    val hasVpnConsent = service is VpnService ||
+                            android.net.VpnService.prepare(service as Context) == null
                     (service as Service).startForeground(
                         notificationId,
                         it.build(),
-                        FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
+                        if (hasVpnConsent) FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
+                        else FOREGROUND_SERVICE_TYPE_SPECIAL_USE
                     )
                 } else {
                     (service as Service).startForeground(notificationId, it.build())
                 }
             } catch (e: Exception) {
-                Toast.makeText(
-                    SagerNet.application,
-                    "startForeground: $e",
-                    Toast.LENGTH_LONG
-                ).show()
+                // a service started in the foreground that never calls startForeground crashes
+                // the app a few seconds later: stop it with the reason instead
+                Logs.w(e)
+                runOnMainDispatcher { service.stopRunner(false, "startForeground: ${e.readableMessage}") }
             }
         }
 

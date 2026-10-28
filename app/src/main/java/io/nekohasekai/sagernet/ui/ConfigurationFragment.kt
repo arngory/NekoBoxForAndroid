@@ -18,6 +18,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.os.BundleCompat
+import androidx.core.os.bundleOf
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
@@ -116,12 +118,31 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipInputStream
 
 class ConfigurationFragment @JvmOverloads constructor(
-    val select: Boolean = false, val selectedItem: ProxyEntity? = null, val titleRes: Int = 0
+    select: Boolean = false, selectedItem: ProxyEntity? = null, titleRes: Int = 0
 ) : ToolbarFragment(R.layout.layout_group_list),
     PopupMenu.OnMenuItemClickListener,
     Toolbar.OnMenuItemClickListener,
     SearchView.OnQueryTextListener,
     OnPreferenceDataStoreChangeListener {
+
+    // Kept in the arguments: after recreation the fragment is built with the no-arg constructor,
+    // and losing "select" made it cast a ProfileSelectActivity to MainActivity.
+    init {
+        if (select) arguments = bundleOf(
+            ARG_SELECT to true, ARG_SELECTED_ITEM to selectedItem, ARG_TITLE_RES to titleRes
+        )
+    }
+
+    val select get() = arguments?.getBoolean(ARG_SELECT) ?: false
+    val selectedItem
+        get() = arguments?.let { BundleCompat.getParcelable(it, ARG_SELECTED_ITEM, ProxyEntity::class.java) }
+    val titleRes get() = arguments?.getInt(ARG_TITLE_RES) ?: 0
+
+    companion object {
+        private const val ARG_SELECT = "select"
+        private const val ARG_SELECTED_ITEM = "selected_item"
+        private const val ARG_TITLE_RES = "title_res"
+    }
 
     interface SelectCallback {
         fun returnProfile(profileId: Long)

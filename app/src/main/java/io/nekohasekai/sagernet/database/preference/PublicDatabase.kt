@@ -19,7 +19,7 @@ abstract class PublicDatabase : RoomDatabase() {
                 .setJournalMode(JournalMode.TRUNCATE)
                 .allowMainThreadQueries()
                 .enableMultiInstanceInvalidation()
-                .fallbackToDestructiveMigration()
+                // no destructive fallback: a schema bump without a migration must not wipe settings
                 .setQueryExecutor { GlobalScope.launch { it.run() } }
                 .build()
         }

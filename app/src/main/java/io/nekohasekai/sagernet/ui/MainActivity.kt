@@ -100,14 +100,15 @@ class MainActivity : ThemedActivity(),
         DataStore.configurationStore.registerChangeListener(this)
         GroupManager.userInterface = GroupInterfaceAdapter(this)
 
-        if (intent?.action == Intent.ACTION_VIEW) {
+        // only on a fresh start: a recreated activity (theme, rotation) would ask to import again
+        if (savedInstanceState == null && intent?.action == Intent.ACTION_VIEW) {
             onNewIntent(intent)
         }
 
         refreshNavMenu(DataStore.enableClashAPI)
 
         // sdk 33 notification
-        if (Build.VERSION.SDK_INT >= 33) {
+        if (Build.VERSION.SDK_INT >= 33 && savedInstanceState == null) {
             val checkPermission =
                 ContextCompat.checkSelfPermission(this@MainActivity, POST_NOTIFICATIONS)
             if (checkPermission != PackageManager.PERMISSION_GRANTED) {

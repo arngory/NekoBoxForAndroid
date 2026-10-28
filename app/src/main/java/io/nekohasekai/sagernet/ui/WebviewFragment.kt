@@ -67,6 +67,12 @@ class WebviewFragment : ToolbarFragment(R.layout.layout_webview), Toolbar.OnMenu
             .build().toString()
     }
 
+    override fun onDestroyView() {
+        mWebView.removeAllViews()
+        mWebView.destroy()
+        super.onDestroyView()
+    }
+
     @SuppressLint("CheckResult")
     override fun onMenuItemClick(item: MenuItem): Boolean {
         when (item.itemId) {
@@ -90,9 +96,8 @@ class WebviewFragment : ToolbarFragment(R.layout.layout_webview), Toolbar.OnMenu
                 }
             }
             R.id.close -> {
-                mWebView.onPause()
-                mWebView.removeAllViews()
-                mWebView.destroy()
+                // leave the dashboard; the WebView is destroyed with the view
+                (requireActivity() as MainActivity).displayFragmentWithId(R.id.nav_configuration)
             }
         }
         return true
