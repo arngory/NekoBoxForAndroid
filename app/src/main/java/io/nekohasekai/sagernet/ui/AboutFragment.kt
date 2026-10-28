@@ -186,19 +186,16 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                                 .icon(R.drawable.ic_baseline_sanitizer_24)
                                 .text(R.string.github)
                                 .setOnClickAction {
-                                    requireContext().launchCustomTab(
-                                        "https://github.com/MatsuriDayo/NekoBoxForAndroid"
-
-                                    )
+                                    requireContext().launchCustomTab("https://github.com/$RELEASE_REPO")
                                 }
                                 .build())
                         .addItem(
                             MaterialAboutActionItem.Builder()
                                 .icon(R.drawable.ic_qu_shadowsocks_foreground)
-                                .text(R.string.telegram)
+                                .text(R.string.upstream_project)
                                 .setOnClickAction {
                                     requireContext().launchCustomTab(
-                                        "https://t.me/MatsuriDayo"
+                                        "https://github.com/MatsuriDayo/NekoBoxForAndroid"
                                     )
                                 }
                                 .build())

@@ -140,7 +140,8 @@ fun Project.setupAppCommon() {
             val key = signingConfigs.findByName("release")
             if (key != null) {
                 getByName("release").signingConfig = key
-                getByName("debug").signingConfig = key
+                // debug builds keep the debug key: a debuggable APK signed with the release key
+                // installs over a release one and gives run-as access to its profiles
             }
         }
     }
