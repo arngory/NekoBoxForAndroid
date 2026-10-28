@@ -390,6 +390,12 @@ fun parseV2RayN(link: String): VMessBean {
                 bean.type = "http"
             }
         }
+
+        // v2rayN keeps the XHTTP mode in "type"
+        "xhttp", "splithttp" -> {
+            bean.type = "xhttp"
+            if (!headerType.isNullOrBlank()) bean.xhttpMode = headerType
+        }
     }
     when (vmessQRCode.tls) {
         "tls", "reality" -> {
@@ -459,6 +465,8 @@ fun VMessBean.toV2rayN(): String {
                     net = "tcp"
                 }
             }
+
+            "xhttp" -> type = bean.xhttpMode
         }
 
         if (isTLS()) {

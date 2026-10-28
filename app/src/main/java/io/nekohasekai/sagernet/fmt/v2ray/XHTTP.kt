@@ -21,6 +21,9 @@ private val RANGE_KEYS = setOf(
     "x_padding_bytes", "sc_max_each_post_bytes", "sc_min_posts_interval_ms", "sc_stream_up_server_secs",
     "uplink_chunk_size", "session_length",
 )
+// numbers and booleans in the core; Xray wrote some of them as ranges ("scMaxConcurrentPosts": "100-200")
+private val INT_KEYS = setOf("sc_max_concurrent_posts", "server_max_header_bytes", "sc_max_buffered_posts")
+private val BOOL_KEYS = setOf("no_grpc_header", "x_padding_obfs_mode", "no_sse_header")
 
 /** xPaddingBytes -> x_padding_bytes, noGRPCHeader -> no_grpc_header, uplinkHTTPMethod -> uplink_http_method */
 internal fun xhttpSnakeCase(key: String) = key
@@ -40,20 +43,43 @@ fun xhttpExtraOptions(extra: String): Map<String, Any> {
         val key = xhttpSnakeCase(rawKey)
         if (key !in XHTTP_OPTION_KEYS) continue
         val value = json.get(rawKey)
+        // a value of the wrong type would fail the whole config: leave it out like an unknown key
         options[key] = when {
-            key == "xmux" && value is JSONObject -> buildMap {
-                for (rawXmuxKey in value.keys()) {
-                    val xmuxKey = xhttpSnakeCase(rawXmuxKey)
-                    if (xmuxKey in XMUX_OPTION_KEYS) put(xmuxKey, jsonValue(value.get(rawXmuxKey)))
-                }
+            key == "xmux" -> if (value is JSONObject) xmuxOptions(value) else continue
+            key == "headers" -> if (value is JSONObject) jsonValue(value) else continue
+            key in INT_KEYS -> integralValue(value) ?: continue
+            key in BOOL_KEYS -> value as? Boolean ?: continue
+            key in RANGE_KEYS && value is JSONObject -> {
+                val from = integralValue(value.opt("from") ?: continue) ?: continue
+                val to = integralValue(value.opt("to") ?: continue) ?: continue
+                "$from-$to"
             }
 
-            key in RANGE_KEYS && value is JSONObject -> "${value.opt("from")}-${value.opt("to")}"
-            key in RANGE_KEYS && value is Number -> value.toString()
-            else -> jsonValue(value)
+            key in RANGE_KEYS && value is Number -> integralValue(value)?.toString() ?: continue
+            else -> value as? String ?: continue
         }
     }
     return options
+}
+
+private fun xmuxOptions(xmux: JSONObject) = buildMap {
+    for (rawKey in xmux.keys()) {
+        val key = xhttpSnakeCase(rawKey)
+        val value = xmux.get(rawKey)
+        when {
+            key !in XMUX_OPTION_KEYS -> {}
+            key == "h_keep_alive_period" -> integralValue(value)?.let { put(key, it) }
+            // ranges: "min-max", a number or [min, max]
+            value is String || value is JSONArray -> put(key, jsonValue(value))
+            else -> integralValue(value)?.let { put(key, it) }
+        }
+    }
+}
+
+private fun integralValue(value: Any): Long? = when (value) {
+    is Int, is Long -> (value as Number).toLong()
+    is Number -> value.toDouble().takeIf { it % 1.0 == 0.0 }?.toLong()
+    else -> null
 }
 
 private fun jsonValue(value: Any): Any = when (value) {

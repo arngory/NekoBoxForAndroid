@@ -29,10 +29,20 @@ class XhttpTest {
         )
         assertEquals("100-1000", options["x_padding_bytes"])
         assertEquals(true, options["no_grpc_header"])
-        assertEquals(mapOf("max_concurrency" to "16-32", "c_max_reuse_times" to 64), options["xmux"])
+        assertEquals(mapOf("max_concurrency" to "16-32", "c_max_reuse_times" to 64L), options["xmux"])
         assertEquals(mapOf("X-Test" to "1"), options["headers"])
         assertTrue("downloadSettings" !in options && "download_settings" !in options)
         assertTrue(xhttpExtraOptions(" ").isEmpty())
+
+        // wrong types would fail the core config, they are left out
+        val typed = xhttpExtraOptions(
+            """{"scMaxConcurrentPosts": "100-200", "serverMaxHeaderBytes": 8192, "noSSEHeader": "yes",
+                "scMaxEachPostBytes": 1000000, "xPaddingBytes": {"from": 1}, "xmux": {"hKeepAlivePeriod": "30"}}"""
+        )
+        assertTrue("sc_max_concurrent_posts" !in typed && "no_sse_header" !in typed && "x_padding_bytes" !in typed)
+        assertEquals(8192L, typed["server_max_header_bytes"])
+        assertEquals("1000000", typed["sc_max_each_post_bytes"])
+        assertEquals(emptyMap<String, Any>(), typed["xmux"])
     }
 
     @Test
