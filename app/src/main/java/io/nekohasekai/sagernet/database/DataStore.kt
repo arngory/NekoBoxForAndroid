@@ -114,6 +114,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var bypassLan by configurationStore.boolean(Key.BYPASS_LAN)
     var bypassLanInCore by configurationStore.boolean(Key.BYPASS_LAN_IN_CORE)
     var tlsFragmentBypass by configurationStore.stringToInt(Key.TLS_FRAGMENT_BYPASS)
+    var ruleSetUpdateHours by configurationStore.stringToInt(Key.RULE_SET_UPDATE_HOURS) { 24 }
 
     var allowAccess by configurationStore.boolean(Key.ALLOW_ACCESS)
     var speedInterval by configurationStore.stringToInt(Key.SPEED_INTERVAL)

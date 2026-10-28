@@ -117,6 +117,13 @@
             app:title="@string/tls_fragment_bypass"
             app:useSimpleSummaryProvider="true" />
         <moe.matsuri.nb4a.ui.SimpleMenuPreference
+            app:defaultValue="24"
+            app:entries="@array/rule_set_update_entries"
+            app:entryValues="@array/rule_set_update_hours"
+            app:key="ruleSetUpdateHours"
+            app:title="@string/rule_set_update_interval"
+            app:useSimpleSummaryProvider="true" />
+        <moe.matsuri.nb4a.ui.SimpleMenuPreference
             app:defaultValue="1"
             app:entries="@array/traffic_sniffing_values"
             app:entryValues="@array/int_array_2"

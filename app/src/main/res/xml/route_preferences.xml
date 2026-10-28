@@ -18,11 +18,13 @@
             app:title="@string/apps" />
         <EditTextPreference
             app:icon="@drawable/ic_baseline_domain_24"
+            app:dialogMessage="@string/route_domain_help"
             app:key="routeDomain"
             app:title="domain"
             app:useSimpleSummaryProvider="true" />
         <EditTextPreference
             app:icon="@drawable/ic_baseline_add_road_24"
+            app:dialogMessage="@string/route_ip_help"
             app:key="routeIP"
             app:title="dst ip"
             app:useSimpleSummaryProvider="true" />

@@ -144,6 +144,14 @@
 <string name="enable_clash_api">Включить Clash API</string>
 <string name="enable_clash_api_summary">Предоставлять панель управления Clash API и YACD по адресу 127.0.0.1:9090. API защищён случайным ключом, для других клиентов его можно скопировать в меню панели</string>
 <string name="copy_clash_api_secret">Скопировать ключ API</string>
+<string name="route_domain_help">По одному в строке: example.com (с поддоменами), full:, keyword:, regexp:, geosite:ru или remote rule-set с доменами: rule-set:https://…/geosite-ru.srs</string>
+<string name="route_ip_help">По одному в строке: 1.2.3.0/24, geoip:ru, geoip:private или remote rule-set с IP: rule-set:https://…/geoip-ru.srs</string>
+<string name="rule_set_update_interval">Интервал обновления remote rule-set</string>
+<string name="rule_set_update_6h">Каждые 6 часов</string>
+<string name="rule_set_update_12h">Каждые 12 часов</string>
+<string name="rule_set_update_1d">Раз в день</string>
+<string name="rule_set_update_3d">Раз в 3 дня</string>
+<string name="rule_set_update_7d">Раз в неделю</string>
 <string name="upstream_project">Оригинальный проект: NekoBox for Android</string>
 <string name="shortcut_pin_unsupported">Лаунчер не умеет закреплять ярлыки. Выберите лаунчер по умолчанию и попробуйте снова.</string>
 <string name="enable_dns_routing">Включить маршрутизацию DNS</string>

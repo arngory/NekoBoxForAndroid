@@ -530,6 +530,22 @@
         <item>@string/tls_fragment_tcp</item>
     </string-array>
 
+    <string-array name="rule_set_update_entries">
+        <item>@string/rule_set_update_6h</item>
+        <item>@string/rule_set_update_12h</item>
+        <item>@string/rule_set_update_1d</item>
+        <item>@string/rule_set_update_3d</item>
+        <item>@string/rule_set_update_7d</item>
+    </string-array>
+
+    <string-array name="rule_set_update_hours" translatable="false">
+        <item>6</item>
+        <item>12</item>
+        <item>24</item>
+        <item>72</item>
+        <item>168</item>
+    </string-array>
+
     <string-array name="traffic_sniffing_values">
         <item>@string/off</item>
         <item>@string/sniff_routing</item>

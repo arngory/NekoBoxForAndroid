@@ -531,6 +531,14 @@
     <string name="log_level">Log Level</string>
     <string name="enable_clash_api_summary">Provide clash api and yacd dashboard at 127.0.0.1:9090. The API is protected by a random secret, copy it from the dashboard menu for other clients</string>
     <string name="copy_clash_api_secret">Copy API secret</string>
+    <string name="route_domain_help">One per line: example.com (with subdomains), full:, keyword:, regexp:, geosite:ru, or a remote rule-set with domains: rule-set:https://…/geosite-ru.srs</string>
+    <string name="route_ip_help">One per line: 1.2.3.0/24, geoip:ru, geoip:private, or a remote rule-set with IPs: rule-set:https://…/geoip-ru.srs</string>
+    <string name="rule_set_update_interval">Remote rule-set update interval</string>
+    <string name="rule_set_update_6h">Every 6 hours</string>
+    <string name="rule_set_update_12h">Every 12 hours</string>
+    <string name="rule_set_update_1d">Daily</string>
+    <string name="rule_set_update_3d">Every 3 days</string>
+    <string name="rule_set_update_7d">Weekly</string>
     <string name="upstream_project">Upstream: NekoBox for Android</string>
     <string name="shortcut_pin_unsupported">The launcher can not pin shortcuts. Choose a default launcher and try again.</string>
     <string name="xtls_flow">Flow (VLESS Sub-protocol)</string>

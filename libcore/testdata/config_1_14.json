@@ -57,6 +57,12 @@
     "server": "dns-fake",
     "disable_cache": true,
     "strategy": "ipv4_only"
+   },
+   {
+    "rule_set": [
+     "rule-set:https://example.com/geosite-ru-blocked.srs"
+    ],
+    "server": "dns-remote"
    }
   ],
   "final": "dns-remote",
@@ -220,7 +226,28 @@
     ],
     "outbound": "bypass",
     "tls_record_fragment": true
+   },
+   {
+    "rule_set": [
+     "rule-set:https://example.com/geosite-ru-blocked.srs"
+    ],
+    "outbound": "proxy"
+   }
+  ],
+  "rule_set": [
+   {
+    "type": "remote",
+    "tag": "rule-set:https://example.com/geosite-ru-blocked.srs",
+    "format": "binary",
+    "url": "https://example.com/geosite-ru-blocked.srs",
+    "update_interval": "24h"
    }
   ]
+ },
+ "experimental": {
+  "cache_file": {
+   "enabled": true,
+   "path": "cache.db"
+  }
  }
 }

@@ -39,6 +39,7 @@ object Key {
     const val BYPASS_LAN = "bypassLan"
     const val BYPASS_LAN_IN_CORE = "bypassLanInCore"
     const val TLS_FRAGMENT_BYPASS = "tlsFragmentBypass"
+    const val RULE_SET_UPDATE_HOURS = "ruleSetUpdateHours"
 
     const val MIXED_PORT = "mixedPort"
     const val MIXED_USERNAME = "mixedUsername"

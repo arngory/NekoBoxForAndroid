@@ -164,6 +164,7 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         bypassLan.onPreferenceChangeListener = reloadListener
         bypassLanInCore.onPreferenceChangeListener = reloadListener
         tlsFragmentBypass.onPreferenceChangeListener = reloadListener
+        findPreference<Preference>(Key.RULE_SET_UPDATE_HOURS)!!.onPreferenceChangeListener = reloadListener
         mtu.onPreferenceChangeListener = reloadListener
 
         enableFakeDns.onPreferenceChangeListener = reloadListener

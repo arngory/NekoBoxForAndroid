@@ -700,6 +700,16 @@ fun buildConfig(
             route.rule_set = route.rule_set.distinctBy { it.tag }
         }
 
+        // remote rule-sets live in the cache file across restarts: without it every start downloads
+        // them again, and sing-box refuses to start when that first download fails
+        if (!forTest && route.rule_set?.any { it.type == "remote" } == true) {
+            if (experimental == null) experimental = ExperimentalOptions()
+            experimental.cache_file = CacheFile().apply {
+                enabled = true
+                path = "cache.db" // relative to the core's no_backup working directory
+            }
+        }
+
         for (freedom in arrayOf(TAG_DIRECT, TAG_BYPASS)) outbounds.add(Outbound().apply {
             tag = freedom
             type = "direct"

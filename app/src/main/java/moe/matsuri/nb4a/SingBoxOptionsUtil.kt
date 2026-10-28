@@ -36,6 +36,9 @@ fun SingBoxOptions.DNSRule_DefaultOptions.makeSingBoxRule(list: List<String>) {
     list.forEach {
         if (it.startsWith("geosite:")) {
             rule_set.plusAssign(it)
+        } else if (isRemoteRuleSet(it)) {
+            // an IP-only rule-set makes a DNS rule invalid in sing-box 1.14; skip what looks like one
+            if (!isIPRuleSetName(it)) rule_set.plusAssign(it)
         } else if (it.startsWith("full:")) {
             domain.plusAssign(it.removePrefix("full:").lowercase())
         } else if (it.startsWith("domain:")) {
@@ -70,9 +73,34 @@ fun SingBoxOptions.DNSRule_DefaultOptions.checkEmpty(): Boolean {
     return true
 }
 
-fun generateRuleSet(ruleSetString: List<String>, ruleSet: MutableList<RuleSet>) {
+/** Prefix of a remote rule-set in rule lists: `rule-set:https://example.com/geosite-ru.srs`. */
+const val REMOTE_RULE_SET_PREFIX = "rule-set:"
+
+fun isRemoteRuleSet(item: String) = item.startsWith(REMOTE_RULE_SET_PREFIX)
+
+/** Rule-sets named geoip-… or ip-… usually hold IP CIDRs only. */
+fun isIPRuleSetName(item: String) = item.substringAfterLast('/').substringBefore('?').lowercase()
+    .let { it.startsWith("geoip") || it.startsWith("ip-") || it.startsWith("ipcidr") }
+
+fun generateRuleSet(
+    ruleSetString: List<String>,
+    ruleSet: MutableList<RuleSet>,
+    updateHours: Int = DataStore.ruleSetUpdateHours,
+) {
     ruleSetString.forEach {
         when {
+            isRemoteRuleSet(it) -> {
+                val url = it.removePrefix(REMOTE_RULE_SET_PREFIX)
+                ruleSet.add(RuleSet().apply {
+                    type = "remote"
+                    tag = it // the tag is also the cache key: the same URL keeps its download
+                    format = if (url.substringBefore('?').endsWith(".json")) "source" else "binary"
+                    this.url = url
+                    update_interval = "${updateHours.coerceIn(1, 24 * 30)}h"
+                    // downloaded through the final outbound, i.e. the proxy in the default mode
+                })
+            }
+
             it.startsWith("geoip:") -> {
                 ruleSet.add(RuleSet().apply {
                     type = "local"
@@ -95,17 +123,21 @@ fun generateRuleSet(ruleSetString: List<String>, ruleSet: MutableList<RuleSet>) 
 }
 
 fun SingBoxOptions.Rule_DefaultOptions.makeSingBoxRule(list: List<String>, isIP: Boolean) {
+    // a rule may have both domains and IPs: keep the rule-sets added for the other list
+    if (rule_set == null) rule_set = mutableListOf<String>()
     if (isIP) {
         ip_cidr = mutableListOf<String>()
-        rule_set = mutableListOf<String>()
     } else {
-        rule_set = mutableListOf<String>()
         domain = mutableListOf<String>()
         domain_suffix = mutableListOf<String>()
         domain_regex = mutableListOf<String>()
         domain_keyword = mutableListOf<String>()
     }
     list.forEach {
+        if (isRemoteRuleSet(it)) {
+            rule_set.plusAssign(it)
+            return@forEach
+        }
         if (isIP) {
             if (it.startsWith("geoip:")) {
                 if (it == "geoip:private") {
