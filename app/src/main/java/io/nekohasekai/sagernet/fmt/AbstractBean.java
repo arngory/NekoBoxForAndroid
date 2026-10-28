@@ -31,6 +31,8 @@ public abstract class AbstractBean extends Serializable {
     public Integer knockSilence; // seconds without a reply before one re-knock, 0 off
     // TLS fragmentation: 0 off, 1 TLS records, 2 TCP segments
     public Integer tlsFragment;
+    // version 4: SHA-256 of the server's public key, base64, one per line
+    public String certPins;
 
     //
     public transient String finalAddress;
@@ -86,6 +88,7 @@ public abstract class AbstractBean extends Serializable {
         if (knockTtl == null) knockTtl = 10;
         if (knockSilence == null) knockSilence = 15;
         if (tlsFragment == null) tlsFragment = 0;
+        if (certPins == null) certPins = "";
     }
 
 
@@ -95,7 +98,7 @@ public abstract class AbstractBean extends Serializable {
     public void serializeToBuffer(@NonNull ByteBufferOutput output) {
         serialize(output);
 
-        output.writeInt(3);
+        output.writeInt(4);
         if (!serializeWithoutName) {
             output.writeString(name);
         }
@@ -106,6 +109,7 @@ public abstract class AbstractBean extends Serializable {
         output.writeInt(knockTtl != null ? knockTtl : 10);
         output.writeInt(tlsFragment != null ? tlsFragment : 0);
         output.writeInt(knockSilence != null ? knockSilence : 15);
+        output.writeString(certPins != null ? certPins : "");
     }
 
     @Override
@@ -125,6 +129,9 @@ public abstract class AbstractBean extends Serializable {
         }
         if (extraVersion >= 3) {
             knockSilence = input.readInt();
+        }
+        if (extraVersion >= 4) {
+            certPins = input.readString();
         }
     }
 

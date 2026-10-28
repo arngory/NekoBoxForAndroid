@@ -25,6 +25,7 @@ object Key {
     const val DIRECT_DNS = "directDns"
     const val ENABLE_DNS_ROUTING = "enableDnsRouting"
     const val ENABLE_FAKEDNS = "enableFakeDns"
+    const val DNS_OPTIMISTIC_CACHE = "dnsOptimisticCache"
 
     const val IPV6_MODE = "ipv6Mode"
 
@@ -107,6 +108,7 @@ object Key {
     const val SERVER_KNOCK_TTL = "serverKnockTtl"
     const val SERVER_KNOCK_SILENCE = "serverKnockSilence"
     const val SERVER_TLS_FRAGMENT = "serverTlsFragment"
+    const val SERVER_CERT_PINS = "serverCertPins"
 
     const val SERVER_SECURITY_CATEGORY = "serverSecurityCategory"
     const val SERVER_TLS_CAMOUFLAGE_CATEGORY = "serverTlsCamouflageCategory"

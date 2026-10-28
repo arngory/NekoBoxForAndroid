@@ -126,6 +126,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var directDns by configurationStore.string(Key.DIRECT_DNS) { "https://223.5.5.5/dns-query" }
     var enableDnsRouting by configurationStore.boolean(Key.ENABLE_DNS_ROUTING) { true }
     var enableFakeDns by configurationStore.boolean(Key.ENABLE_FAKEDNS) { true }
+    var dnsOptimisticCache by configurationStore.boolean(Key.DNS_OPTIMISTIC_CACHE)
 
     var rulesProvider by configurationStore.stringToInt(Key.RULES_PROVIDER)
     var logLevel by configurationStore.stringToInt(Key.LOG_LEVEL)
@@ -282,6 +283,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var serverKnockTtl by profileCacheStore.stringToInt(Key.SERVER_KNOCK_TTL) { 10 }
     var serverKnockSilence by profileCacheStore.stringToInt(Key.SERVER_KNOCK_SILENCE) { 15 }
     var serverTlsFragment by profileCacheStore.stringToInt(Key.SERVER_TLS_FRAGMENT)
+    var serverCertPins by profileCacheStore.string(Key.SERVER_CERT_PINS)
 
     var groupName by profileCacheStore.string(Key.GROUP_NAME)
     var groupType by profileCacheStore.stringToInt(Key.GROUP_TYPE)

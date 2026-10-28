@@ -52,6 +52,7 @@ const val TAG_BLOCK = "block"
 const val LOCALHOST = "127.0.0.1"
 
 private val TLS_FRAGMENT_TYPES = setOf("vmess", "vless", "trojan", "http", "anytls", "shadowtls")
+private val TLS_PIN_TYPES = TLS_FRAGMENT_TYPES + setOf("hysteria", "hysteria2", "tuic")
 
 /**
  * Credentials of the local mixed inbound. In VPN mode any app on the device could otherwise
@@ -203,6 +204,8 @@ fun buildConfig(
         dns = DNSOptions().apply {
             servers = mutableListOf()
             rules = mutableListOf()
+            // answer from an expired cache entry at once and refresh it in the background
+            if (!forTest && DataStore.dnsOptimisticCache) _hack_config_map["optimistic"] = true
         }
 
         fun autoDnsDomainStrategy(s: String): String? {
@@ -440,14 +443,23 @@ fun buildConfig(
                     _hack_custom_config = bean.customOutboundJson
                 }
 
-                // TLS fragmentation, only meaningful for TCP-based TLS outbounds
+                // per-profile TLS tweaks, merged into the outbound's tls object
+                val tlsTweaks = mutableMapOf<String, Any>()
+                val outboundType = (currentOutbound as? Outbound)?.type
+                // fragmentation is only meaningful for TCP-based TLS outbounds
                 if (!proxyEntity.needExternal() && (bean.tlsFragment ?: 0) > 0 &&
-                    (currentOutbound as? Outbound)?.type in TLS_FRAGMENT_TYPES
+                    outboundType in TLS_FRAGMENT_TYPES
                 ) {
-                    currentOutbound._hack_config_map["tls"] = mapOf(
-                        (if (bean.tlsFragment == 2) "fragment" else "record_fragment") to true
-                    )
+                    tlsTweaks[if (bean.tlsFragment == 2) "fragment" else "record_fragment"] = true
                 }
+                if (!proxyEntity.needExternal() && !bean.certPins.isNullOrBlank() &&
+                    outboundType in TLS_PIN_TYPES
+                ) {
+                    tlsTweaks["certificate_public_key_sha256"] = parseCertificatePins(bean.certPins)
+                    // the pin replaces CA verification; sing-box rejects it next to a custom CA
+                    tlsTweaks["certificate"] = emptyList<String>()
+                }
+                if (tlsTweaks.isNotEmpty()) currentOutbound._hack_config_map["tls"] = tlsTweaks
 
                 // port knocking: a libcore "knock" outbound dials the server for this hop
                 var knockTag: String? = null

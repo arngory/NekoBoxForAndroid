@@ -36,6 +36,7 @@ import io.nekohasekai.sagernet.databinding.LayoutConnectionTweaksBinding
 import io.nekohasekai.sagernet.databinding.LayoutGroupItemBinding
 import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.fmt.internal.ChainBean
+import io.nekohasekai.sagernet.fmt.parseCertificatePins
 import io.nekohasekai.sagernet.fmt.parseKnockSequence
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.ui.ThemedActivity
@@ -175,6 +176,7 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         DataStore.serverKnockTtl = knockTtl
         DataStore.serverKnockSilence = knockSilence
         DataStore.serverTlsFragment = tlsFragment
+        DataStore.serverCertPins = certPins
     }
 
     private fun AbstractBean.saveConnectionTweaks() {
@@ -183,6 +185,7 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         knockTtl = DataStore.serverKnockTtl
         knockSilence = DataStore.serverKnockSilence
         tlsFragment = DataStore.serverTlsFragment
+        certPins = DataStore.serverCertPins
     }
 
     fun showConnectionTweaksDialog() {
@@ -198,6 +201,7 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         binding.knockInterval.setText(DataStore.serverKnockInterval.toString())
         binding.knockTtl.setText(DataStore.serverKnockTtl.toString())
         binding.knockSilence.setText(DataStore.serverKnockSilence.toString())
+        binding.certPins.setText(DataStore.serverCertPins)
         val dialog = MaterialAlertDialogBuilder(this).setTitle(R.string.connection_tweaks)
             .setView(binding.root)
             .setPositiveButton(android.R.string.ok, null)
@@ -211,6 +215,14 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
                 binding.knockSequence.error = getString(R.string.port_knocking_invalid, e.message)
                 return@setOnClickListener
             }
+            val pins = binding.certPins.text.toString()
+            try {
+                parseCertificatePins(pins)
+            } catch (e: IllegalArgumentException) {
+                binding.certPins.error = e.message
+                return@setOnClickListener
+            }
+            DataStore.serverCertPins = pins.trim()
             DataStore.serverTlsFragment = when (binding.tlsFragment.checkedRadioButtonId) {
                 R.id.tls_fragment_record -> 1
                 R.id.tls_fragment_tcp -> 2

@@ -66,7 +66,8 @@
    }
   ],
   "final": "dns-remote",
-  "strategy": "prefer_ipv4"
+  "strategy": "prefer_ipv4",
+  "optimistic": true
  },
  "inbounds": [
   {
@@ -101,7 +102,11 @@
      "enabled": true,
      "fingerprint": "chrome"
     },
-    "record_fragment": true
+    "record_fragment": true,
+    "certificate_public_key_sha256": [
+     "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="
+    ],
+    "certificate": []
    },
    "detour": "g-1-knock"
   },

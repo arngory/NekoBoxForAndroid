@@ -200,6 +200,11 @@
             app:key="enableFakeDns"
             app:summary="@string/fakedns_message"
             app:title="@string/enable_fakedns" />
+        <SwitchPreference
+            app:icon="@drawable/ic_baseline_timelapse_24"
+            app:key="dnsOptimisticCache"
+            app:summary="@string/dns_optimistic_cache_sum"
+            app:title="@string/dns_optimistic_cache" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/inbound_settings">

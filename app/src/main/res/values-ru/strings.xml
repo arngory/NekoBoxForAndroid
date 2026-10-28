@@ -144,6 +144,9 @@
 <string name="enable_clash_api">Включить Clash API</string>
 <string name="enable_clash_api_summary">Предоставлять панель управления Clash API и YACD по адресу 127.0.0.1:9090. API защищён случайным ключом, для других клиентов его можно скопировать в меню панели</string>
 <string name="copy_clash_api_secret">Скопировать ключ API</string>
+<string name="wireguard_persistent_keepalive">Persistent keepalive, секунд (0 — выкл., 25 для мобильных сетей)</string>
+<string name="dns_optimistic_cache">Оптимистичный DNS-кеш</string>
+<string name="dns_optimistic_cache_sum">Сразу отвечать из истёкшей записи кеша и обновлять её в фоне: быстрее на медленной мобильной сети, но один запрос может получить устаревший адрес</string>
 <string name="group_auto_select">Авто (наименьшая задержка)</string>
 <string name="group_auto_select_sum">Запуск любого профиля группы подключает через профиль с наименьшей задержкой, проверка каждые 3 минуты</string>
 <string name="subscription_send_hwid">Отправлять ID устройства (HWID)</string>
@@ -507,7 +510,10 @@
 <string name="ws_path">Путь к WebSocket</string>
 <string name="xtls_flow">Flow (подпротокол VLESS)</string>
 <string name="yes">Да</string>
-    <string name="connection_tweaks">Port knocking и фрагментация TLS</string>
+    <string name="connection_tweaks">Настройки подключения</string>
+    <string name="cert_pins">Пиннинг сертификата</string>
+    <string name="cert_pins_hint">SHA-256 публичного ключа сервера</string>
+    <string name="cert_pins_summary">Base64 или hex, по одному в строке. Заменяет проверку по CA, поэтому самоподписанный сертификат работает без «небезопасного» режима. Получить: openssl x509 -in cert.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64</string>
     <string name="tls_fragment">Фрагментация TLS</string>
     <string name="tls_fragment_record">Разбивать на TLS-записи</string>
     <string name="tls_fragment_tcp">Разбивать на TCP-сегменты (медленнее)</string>

@@ -168,6 +168,7 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         mtu.onPreferenceChangeListener = reloadListener
 
         enableFakeDns.onPreferenceChangeListener = reloadListener
+        findPreference<Preference>(Key.DNS_OPTIMISTIC_CACHE)!!.onPreferenceChangeListener = reloadListener
         remoteDns.onPreferenceChangeListener = reloadListener
         directDns.onPreferenceChangeListener = reloadListener
         enableDnsRouting.onPreferenceChangeListener = reloadListener

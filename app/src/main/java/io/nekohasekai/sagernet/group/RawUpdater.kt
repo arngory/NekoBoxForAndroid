@@ -204,6 +204,7 @@ object RawUpdater : GroupUpdater() {
                 bean.knockTtl = existsBean.knockTtl
                 bean.knockSilence = existsBean.knockSilence
                 bean.tlsFragment = existsBean.tlsFragment
+                bean.certPins = existsBean.certPins
                 when {
                     existsBean != bean -> {
                         changed++
@@ -790,6 +791,7 @@ object RawUpdater : GroupUpdater() {
             peerBean.serverPort = endpoint.substringAfterLast(":").toIntOrNull() ?: continue
             peerBean.peerPublicKey = peer["PublicKey"] ?: continue
             peerBean.peerPreSharedKey = peer["PresharedKey"]
+            peerBean.persistentKeepalive = peer["PersistentKeepalive"]?.trim()?.toIntOrNull() ?: 0
             beans.add(peerBean.applyDefaultValues())
         }
         if (beans.isEmpty()) error("Empty available peer list")
