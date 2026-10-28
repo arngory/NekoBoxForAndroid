@@ -149,7 +149,7 @@
 <string name="dns_optimistic_cache_sum">Сразу отвечать из истёкшей записи кеша и обновлять её в фоне: быстрее на медленной мобильной сети, но один запрос может получить устаревший адрес</string>
 <string name="hop_interval_max">Макс. интервал смены порта, секунд (0 — фиксированный)</string>
 <string name="reality_key_share">Обмен ключами REALITY</string>
-<string name="reality_key_share_auto">Как в отпечатке (для Chrome гибридный постквантовый)</string>
+<string name="reality_key_share_auto">Авто: для Chrome гибридный, после неудачной проверки переключается</string>
 <string name="reality_key_share_hybrid">Только гибридный (X25519MLKEM768, Xray 26.9.8+)</string>
 <string name="reality_key_share_classical">Классический (меньше ClientHello, Xray до 26.9.8)</string>
 <string name="xhttp_mode">Режим</string>

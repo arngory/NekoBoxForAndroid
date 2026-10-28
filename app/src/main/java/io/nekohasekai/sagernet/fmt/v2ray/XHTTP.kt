@@ -1,5 +1,6 @@
 package io.nekohasekai.sagernet.fmt.v2ray
 
+import io.nekohasekai.sagernet.ktx.Logs
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -94,6 +95,10 @@ fun buildXhttpOptions(bean: StandardV2RayBean): Map<String, Any> {
         xhttpExtraOptions(bean.xhttpExtra ?: "")
     } catch (e: Exception) {
         throw Exception("XHTTP extra (${bean.displayName()}): ${e.message}")
+    }
+    if (bean.xhttpExtra?.contains("\"downloadSettings\"") == true) {
+        // the profile still works, but downloads go to the main server instead of the separate one
+        Logs.w("XHTTP extra (${bean.displayName()}): downloadSettings is not supported by the core, left out")
     }
     return buildMap {
         putAll(extra)

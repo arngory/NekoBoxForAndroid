@@ -197,7 +197,10 @@ public abstract class StandardV2RayBean extends AbstractBean {
         }
 
         type = input.readString();
-        switch (type) {
+        if (version < 5 && ("xhttp".equals(type) || "splithttp".equals(type))) {
+            // links stored the type as is before version 5, but no transport fields for it
+            type = "xhttp";
+        } else switch (type) {
             case "tcp":
             case "quic": {
                 break;

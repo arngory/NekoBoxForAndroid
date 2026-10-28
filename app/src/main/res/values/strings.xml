@@ -536,7 +536,7 @@
     <string name="dns_optimistic_cache_sum">Answer from an expired cache entry right away and refresh it in the background: faster on slow mobile networks, an address may be stale for one request</string>
     <string name="hop_interval_max">Max port hopping interval, seconds (0 = fixed interval)</string>
     <string name="reality_key_share">REALITY key exchange</string>
-    <string name="reality_key_share_auto">As the fingerprint (hybrid post-quantum for Chrome)</string>
+    <string name="reality_key_share_auto">Auto: hybrid for Chrome, switches after a failed verification</string>
     <string name="reality_key_share_hybrid">Hybrid only (X25519MLKEM768, Xray 26.9.8+)</string>
     <string name="reality_key_share_classical">Classical (smaller ClientHello, Xray before 26.9.8)</string>
     <string name="xhttp_mode">Mode</string>
