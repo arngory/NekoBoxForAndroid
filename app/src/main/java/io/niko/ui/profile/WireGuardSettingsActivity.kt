@@ -25,6 +25,7 @@ class WireGuardSettingsActivity : ProfileSettingsActivity<WireGuardBean>() {
     private val mtu = pbm.add(PreferenceBinding(Type.TextToInt, "mtu"))
     private val reserved = pbm.add(PreferenceBinding(Type.Text, "reserved"))
     private val persistentKeepalive = pbm.add(PreferenceBinding(Type.TextToInt, "persistentKeepalive"))
+    private val amneziaWG = pbm.add(PreferenceBinding(Type.Text, "amneziaWG"))
 
     override fun WireGuardBean.init() {
         pbm.writeToCacheAll(this)
@@ -47,6 +48,8 @@ class WireGuardSettingsActivity : ProfileSettingsActivity<WireGuardBean>() {
         (mtu.preference as EditTextPreference).setOnBindEditTextListener(EditTextPreferenceModifiers.Number)
         (persistentKeepalive.preference as EditTextPreference)
             .setOnBindEditTextListener(EditTextPreferenceModifiers.Number)
+        (amneziaWG.preference as EditTextPreference)
+            .setOnBindEditTextListener(EditTextPreferenceModifiers.Monospace)
     }
 
 }

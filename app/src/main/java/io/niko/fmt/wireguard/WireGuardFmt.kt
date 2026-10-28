@@ -27,6 +27,11 @@ fun genReserved(anyStr: String): String {
 }
 
 fun buildSingBoxEndpointWireguardBean(bean: WireGuardBean): SingBoxOptions.Endpoint_WireGuardOptions {
+    val awg = try {
+        AmneziaWG.parse(bean.amneziaWG)
+    } catch (e: IllegalArgumentException) {
+        throw Exception("${bean.displayName()}: ${e.message}")
+    }
     return SingBoxOptions.Endpoint_WireGuardOptions().apply {
         type = "wireguard"
         address = bean.localAddress.listByLineOrComma()
@@ -43,6 +48,13 @@ fun buildSingBoxEndpointWireguardBean(bean: WireGuardBean): SingBoxOptions.Endpo
             if (bean.persistentKeepalive > 0) {
                 persistent_keepalive_interval = bean.persistentKeepalive.coerceAtMost(65535) // uint16
             }
+            // AmneziaWG 3.x: a "min-max" range re-picked at every keepalive
+            awg.keepalive?.let {
+                persistent_keepalive_interval = null
+                _hack_config_map["persistent_keepalive_interval"] = it.toLongOrNull() ?: it
+            }
         })
+        // the core reads the AmneziaWG fields at the endpoint root, like an awg .conf [Interface]
+        _hack_config_map.putAll(awg.fields)
     }
 }

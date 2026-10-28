@@ -20,6 +20,7 @@ import io.niko.fmt.v2ray.StandardV2RayBean
 import io.niko.fmt.v2ray.VMessBean
 import io.niko.fmt.v2ray.isTLS
 import io.niko.fmt.v2ray.setTLS
+import io.niko.fmt.wireguard.AmneziaWG
 import io.niko.fmt.wireguard.WireGuardBean
 import io.niko.ktx.*
 import libcore.Libcore
@@ -777,7 +778,12 @@ object RawUpdater : GroupUpdater() {
         if (localAddresses.isNullOrEmpty()) error("Empty address in 'Interface' selection")
         bean.localAddress = localAddresses.flatMap { it.split(",") }.joinToString("\n")
         bean.privateKey = iface["PrivateKey"]
-        bean.mtu = iface["MTU"]?.toIntOrNull()
+        // AmneziaWG: keep its [Interface] keys as written, they are checked when the profile starts
+        bean.amneziaWG = iface.keys.filter { AmneziaWG.isKey(it) }
+            .joinToString("\n") { "$it = ${iface[it].orEmpty().trim()}" }
+        // without an MTU line keep the default (a null MTU failed the import); AmneziaWG's s4
+        // junk rides on every data packet, so the plain 1420 would overflow the path there
+        bean.mtu = iface["MTU"]?.trim()?.toIntOrNull() ?: if (bean.amneziaWG.isNotBlank()) 1280 else 1420
         val peers = ini.getAll("Peer")
         if (peers.isNullOrEmpty()) error("Missing 'Peer' selections")
         val beans = mutableListOf<WireGuardBean>()
@@ -792,8 +798,13 @@ object RawUpdater : GroupUpdater() {
             peerBean.serverPort = endpoint.substringAfterLast(":").toIntOrNull() ?: continue
             peerBean.peerPublicKey = peer["PublicKey"] ?: continue
             peerBean.peerPreSharedKey = peer["PresharedKey"]
-            peerBean.persistentKeepalive =
-                peer["PersistentKeepalive"]?.trim()?.toIntOrNull()?.coerceIn(0, 65535) ?: 0
+            val keepalive = peer["PersistentKeepalive"]?.trim().orEmpty()
+            peerBean.persistentKeepalive = keepalive.toIntOrNull()?.coerceIn(0, 65535) ?: 0
+            if (keepalive.contains("-")) {
+                // an AmneziaWG 3.x range travels with the AmneziaWG parameters
+                peerBean.amneziaWG = listOf(peerBean.amneziaWG, "PersistentKeepalive = $keepalive")
+                    .filter { it.isNotBlank() }.joinToString("\n")
+            }
             beans.add(peerBean.applyDefaultValues())
         }
         if (beans.isEmpty()) error("Empty available peer list")

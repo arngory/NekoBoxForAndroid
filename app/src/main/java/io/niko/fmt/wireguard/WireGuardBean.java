@@ -20,6 +20,8 @@ public class WireGuardBean extends AbstractBean {
     public String reserved;
     // version 3: seconds, 0 = off
     public Integer persistentKeepalive;
+    // version 4: AmneziaWG parameters as "Key = value" lines of an AmneziaWG .conf, "" = plain WireGuard
+    public String amneziaWG;
 
     @Override
     public void initializeDefaultValues() {
@@ -31,11 +33,12 @@ public class WireGuardBean extends AbstractBean {
         if (mtu == null) mtu = 1420;
         if (reserved == null) reserved = "";
         if (persistentKeepalive == null) persistentKeepalive = 0;
+        if (amneziaWG == null) amneziaWG = "";
     }
 
     @Override
     public void serialize(ByteBufferOutput output) {
-        output.writeInt(3);
+        output.writeInt(4);
         super.serialize(output);
         output.writeString(localAddress);
         output.writeString(privateKey);
@@ -44,6 +47,7 @@ public class WireGuardBean extends AbstractBean {
         output.writeInt(mtu);
         output.writeString(reserved);
         output.writeInt(persistentKeepalive == null ? 0 : persistentKeepalive);
+        output.writeString(amneziaWG == null ? "" : amneziaWG);
     }
 
     @Override
@@ -58,6 +62,9 @@ public class WireGuardBean extends AbstractBean {
         reserved = input.readString();
         if (version >= 3) {
             persistentKeepalive = input.readInt();
+        }
+        if (version >= 4) {
+            amneziaWG = input.readString();
         }
     }
 

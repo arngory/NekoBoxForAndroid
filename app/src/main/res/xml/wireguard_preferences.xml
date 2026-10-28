@@ -56,4 +56,13 @@
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="AmneziaWG">
+        <EditTextPreference
+            app:dialogMessage="@string/amneziawg_help"
+            app:icon="@drawable/ic_baseline_fingerprint_24"
+            app:key="amneziaWG"
+            app:title="@string/amneziawg_params"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
 </PreferenceScreen>

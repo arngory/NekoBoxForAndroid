@@ -148,6 +148,8 @@
 <string name="dns_optimistic_cache">Оптимистичный DNS-кеш</string>
 <string name="dns_optimistic_cache_sum">Сразу отвечать из истёкшей записи кеша и обновлять её в фоне: быстрее на медленной мобильной сети, но один запрос может получить устаревший адрес</string>
 <string name="hop_interval_max">Макс. интервал смены порта, секунд (0 — фиксированный)</string>
+<string name="amneziawg_params">Параметры AmneziaWG</string>
+<string name="amneziawg_help">Строки секции [Interface] из .conf AmneziaWG: Jc, Jmin, Jmax, S1–S4, H1–H4, I1–I5 и ключи AWG 3, по одной «Ключ = значение» на строку. Пусто — обычный WireGuard. Если задан S4, ставьте MTU 1280 или меньше.</string>
 <string name="reality_key_share">Обмен ключами REALITY</string>
 <string name="reality_key_share_auto">Авто: для Chrome гибридный, после неудачной проверки переключается</string>
 <string name="reality_key_share_hybrid">Только гибридный (X25519MLKEM768, Xray 26.9.8+)</string>

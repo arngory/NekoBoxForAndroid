@@ -195,6 +195,43 @@
      "reserved": "AAAA"
     }
    ]
+  },
+  {
+   "type": "wireguard",
+   "tag": "awg-test",
+   "detour": "g-1",
+   "address": [
+    "10.0.0.2/32"
+   ],
+   "private_key": "YNXtAzepDqRv9H52osJVDQnznT5AL11eVKAc9evmgFc=",
+   "mtu": 1280,
+   "peers": [
+    {
+     "address": "wg.example.com",
+     "port": 51820,
+     "public_key": "Z1XXLsKYkYxuiYjJIkRvtIKFepCYHTgON+GwPq7SOV4=",
+     "allowed_ips": [
+      "0.0.0.0/0",
+      "::/0"
+     ],
+     "reserved": "AAAA",
+     "persistent_keepalive_interval": "25-35"
+    }
+   ],
+   "jc": 4,
+   "jmin": 10,
+   "jmax": 50,
+   "s1": 55,
+   "s2": 42,
+   "s3": 40,
+   "s4": 12,
+   "h1": 1,
+   "h2": "43613244-384550127",
+   "h3": 3,
+   "h4": 4,
+   "i1": "<b 0xc6000000010843290a47ba8ba2ed000044d0e3efd9326adb60561baa3bc4b52471b2d459ddcc9a508dffddc97e4d40d811>",
+   "content_padding_addition": "10-100",
+   "random_trailers": true
   }
  ],
  "route": {
