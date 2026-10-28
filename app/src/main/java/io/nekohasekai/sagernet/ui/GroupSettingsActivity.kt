@@ -259,7 +259,8 @@ class GroupSettingsActivity(
                     DataStore.groupType == GroupType.SUBSCRIPTION &&
                     entity.subscription?.link == DataStore.subscriptionLink)
             if (!keepUserInfo) {
-                entity.subscription?.subscriptionUserinfo = "";
+                entity.subscription?.subscriptionUserinfo = ""
+                entity.subscription?.announce = ""
             }
             GroupManager.updateGroup(entity.apply { serialize() })
         }

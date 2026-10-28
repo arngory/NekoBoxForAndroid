@@ -102,12 +102,13 @@ object RawUpdater : GroupUpdater() {
                 if (remoteName.isNotBlank()) {
                     proxyGroup.name = remoteName
                 }
-                subscriptionUpdateIntervalMinutes(
-                    Util.getStringBox(response.getHeader("profile-update-interval"))
-                )?.let {
-                    subscription.autoUpdate = true
-                    subscription.autoUpdateDelay = it
-                }
+            }
+            // the provider's interval only on the first update: later the user's choice wins
+            if (subscription.lastUpdated == 0) subscriptionUpdateIntervalMinutes(
+                Util.getStringBox(response.getHeader("profile-update-interval"))
+            )?.let {
+                subscription.autoUpdate = true
+                subscription.autoUpdateDelay = it
             }
         }
 

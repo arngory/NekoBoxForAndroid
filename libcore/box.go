@@ -11,6 +11,8 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/matsuridayo/libneko/protect_server"
 	"github.com/matsuridayo/libneko/speedtest"
@@ -131,20 +133,42 @@ func NewSingBoxInstance(config string, localTransport LocalDNSTransport) (b *Box
 	return b, nil
 }
 
+// startTimeout bounds Box.Start: the first download of a remote rule-set has no timeout of its own
+// and a proxy that accepts connections but never answers would keep the start hanging.
+var startTimeout = 60 * time.Second
+
 func (b *BoxInstance) Start() (err error) {
 	b.access.Lock()
 	defer b.access.Unlock()
 
 	defer device.DeferPanicToError("box.Start", func(err_ error) { err = err_ })
 
-	if b.state == 0 {
-		b.state = 1
-		return b.Box.Start()
+	if b.state != 0 {
+		return errors.New("already started")
 	}
-	return errors.New("already started")
+	b.state = 1
+	var timedOut atomic.Bool
+	timer := time.AfterFunc(startTimeout, func() {
+		timedOut.Store(true)
+		b.cancel()
+	})
+	err = b.Box.Start()
+	timer.Stop()
+	if timedOut.Load() {
+		message := fmt.Sprint("start timed out after ", startTimeout, " (downloading a remote rule-set?)")
+		if err != nil {
+			return fmt.Errorf("%s: %w", message, err)
+		}
+		return errors.New(message)
+	}
+	return err
 }
 
 func (b *BoxInstance) Close() (err error) {
+	// cancel before taking the lock: a Start blocked on a download holds it until its context ends
+	if b.cancel != nil {
+		b.cancel()
+	}
 	b.access.Lock()
 	defer b.access.Unlock()
 

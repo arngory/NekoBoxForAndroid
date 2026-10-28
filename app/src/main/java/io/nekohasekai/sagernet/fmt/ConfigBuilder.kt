@@ -452,15 +452,17 @@ fun buildConfig(
                 ) {
                     tlsTweaks[if (bean.tlsFragment == 2) "fragment" else "record_fragment"] = true
                 }
-                if (!proxyEntity.needExternal() && !bean.certPins.isNullOrBlank() &&
-                    outboundType in TLS_PIN_TYPES
-                ) {
-                    // a pin on a profile without TLS would be silently ignored
-                    val tlsEnabled = (currentOutbound.asMap()["tls"] as? Map<*, *>)
-                        ?.get("enabled") == true
-                    if (!tlsEnabled) {
-                        throw Exception("Certificate pinning (${bean.displayName()}): the profile does not use TLS")
+                if (!bean.certPins.isNullOrBlank()) {
+                    // pins that would be silently ignored fail the start instead
+                    val tls = (currentOutbound.asMap()["tls"] as? Map<*, *>)
+                    val reason = when {
+                        proxyEntity.needExternal() || outboundType !in TLS_PIN_TYPES ->
+                            "not supported for this profile type"
+                        tls?.get("enabled") != true -> "the profile does not use TLS"
+                        (tls["reality"] as? Map<*, *>)?.get("enabled") == true -> "not supported with REALITY"
+                        else -> null
                     }
+                    if (reason != null) throw Exception("Certificate pinning (${bean.displayName()}): $reason")
                     tlsTweaks["certificate_public_key_sha256"] = parseCertificatePins(bean.certPins)
                     // the pin replaces CA verification; sing-box rejects it next to a custom CA
                     tlsTweaks["certificate"] = emptyList<String>()
@@ -698,7 +700,8 @@ fun buildConfig(
                     0L -> TAG_PROXY
                     -1L -> TAG_BYPASS
                     -2L -> TAG_BLOCK
-                    else -> if (outId == proxy.id) TAG_PROXY else tagMap[outId] ?: ""
+                    // in Auto mode "proxy" is the urltest: a rule naming a profile means that profile
+                    else -> if (outId == proxy.id && !buildAuto) TAG_PROXY else tagMap[outId] ?: ""
                 }
 
                 _hack_custom_config = rule.config

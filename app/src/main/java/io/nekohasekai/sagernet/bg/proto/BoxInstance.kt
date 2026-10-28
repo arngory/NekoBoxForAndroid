@@ -200,6 +200,11 @@ abstract class BoxInstance(
         }
 
         box.start()
+        // the core restores the last selector choice from the cache file over the configured
+        // default; make the profile that was started the selected one
+        if (config.selectorGroupId >= 0) {
+            config.profileTagMap[config.mainEntId]?.let { box.selectOutbound(it) }
+        }
     }
 
     @Suppress("EXPERIMENTAL_API_USAGE")

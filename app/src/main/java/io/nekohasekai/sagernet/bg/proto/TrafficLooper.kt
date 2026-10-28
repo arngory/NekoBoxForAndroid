@@ -127,9 +127,17 @@ class TrafficLooper
                 if (proxy.config.selectorGroupId >= 0L) {
                     selectMain(proxy.config.mainEntId)
                 }
+                // a group in Auto mode routes through a urltest tagged "proxy": count its traffic
+                // for the speed display, which profile carried it is not known
+                val extraItems = mutableListOf<TrafficUpdater.TrafficLooperData>()
+                if (proxy.config.selectorGroupId < 0L && TAG_PROXY !in proxy.config.trafficMap) {
+                    val autoItem = TrafficUpdater.TrafficLooperData(tag = TAG_PROXY)
+                    tagMap[TAG_PROXY] = autoItem
+                    extraItems += autoItem
+                }
                 //
                 trafficUpdater = TrafficUpdater(
-                    box = proxy.box, items = idMap.values.toList()
+                    box = proxy.box, items = idMap.values.toList() + extraItems
                 )
                 proxy.box.setV2rayStats(tags.joinToString("\n"))
             }

@@ -212,7 +212,10 @@ class BaseService {
         }
 
         suspend fun startProcesses() {
-            data.proxy!!.launch()
+            // the core may download remote rule-sets while starting: keep the main thread free,
+            // so a stop request can still reach close()
+            val proxy = data.proxy!!
+            withContext(Dispatchers.IO) { proxy.launch() }
         }
 
         fun startRunner() {

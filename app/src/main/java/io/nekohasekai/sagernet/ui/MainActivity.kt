@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.RemoteException
 import android.view.KeyEvent
 import android.view.MenuItem
+import androidx.core.net.toUri
 import androidx.activity.addCallback
 import androidx.annotation.IdRes
 import androidx.core.app.ActivityCompat
@@ -185,9 +186,13 @@ class MainActivity : ThemedActivity(),
             }
         }
 
-        val name = group.name.takeIf { !it.isNullOrBlank() } ?: group.subscription?.link
+        var name = group.name.takeIf { !it.isNullOrBlank() } ?: group.subscription?.link
         ?: group.subscription?.token
         if (name.isNullOrBlank()) return
+        // the name comes from the link: show where the subscription is actually fetched from
+        group.subscription?.link?.toUri()?.host?.takeIf { it.isNotBlank() }?.let { host ->
+            if (!name.contains(host)) name = "$name ($host)"
+        }
 
         group.name = group.name.takeIf { !it.isNullOrBlank() }
             ?: ("Subscription #" + System.currentTimeMillis())
