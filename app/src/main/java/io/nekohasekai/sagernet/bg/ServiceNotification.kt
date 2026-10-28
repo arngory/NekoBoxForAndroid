@@ -1,5 +1,6 @@
 package io.nekohasekai.sagernet.bg
 
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -10,6 +11,7 @@ import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
 import android.os.Build
 import android.text.format.Formatter
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import io.nekohasekai.sagernet.Action
@@ -188,27 +190,40 @@ class ServiceNotification(
 
     private suspend fun show() =
         useBuilder {
+            val notification = it.build()
             try {
                 if (Build.VERSION.SDK_INT >= 34) {
-                    // systemExempted is allowed only to an app holding the VPN consent
-                    val hasVpnConsent = service is VpnService ||
-                            android.net.VpnService.prepare(service as Context) == null
-                    (service as Service).startForeground(
-                        notificationId,
-                        it.build(),
-                        if (hasVpnConsent) FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
-                        else FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                    )
+                    startForegroundTyped(notification)
                 } else {
-                    (service as Service).startForeground(notificationId, it.build())
+                    (service as Service).startForeground(notificationId, notification)
                 }
             } catch (e: Exception) {
-                // a service started in the foreground that never calls startForeground crashes
-                // the app a few seconds later: stop it with the reason instead
+                // Nothing left to try. Android may still kill the process for not entering the
+                // foreground; stopping at least ends the runner and reports the reason if it can.
                 Logs.w(e)
                 runOnMainDispatcher { service.stopRunner(false, "startForeground: ${e.readableMessage}") }
             }
         }
+
+    @RequiresApi(34)
+    private fun startForegroundTyped(notification: Notification) {
+        val proxyService = service as Service
+        // systemExempted is allowed only to an app holding the VPN consent
+        val hasVpnConsent = service is VpnService ||
+                android.net.VpnService.prepare(proxyService) == null
+        if (!hasVpnConsent) {
+            proxyService.startForeground(notificationId, notification, FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            return
+        }
+        try {
+            proxyService.startForeground(notificationId, notification, FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
+        } catch (e: SecurityException) {
+            // the consent can be revoked between the check and the call; only ProxyService
+            // declares specialUse, the VPN service can not run without the consent anyway
+            if (service is VpnService) throw e
+            proxyService.startForeground(notificationId, notification, FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        }
+    }
 
     private suspend fun update() = useBuilder {
         NotificationManagerCompat.from(service as Service).notify(notificationId, it.build())

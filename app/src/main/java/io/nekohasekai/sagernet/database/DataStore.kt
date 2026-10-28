@@ -187,8 +187,11 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     val installSecretKeys = setOf("localProxyPassword", "clashApiSecret", "shortcutToken")
 
     /** Settings whose values must not appear in logs or crash reports. */
-    fun isSensitiveKey(key: String) = key in installSecretKeys ||
+    fun isSensitiveKey(key: String) = key in installSecretKeys || key in secretValueKeys ||
         Regex("password|secret|token|psk|private", RegexOption.IGNORE_CASE).containsMatchIn(key)
+
+    // secrets inside the value: outbound credentials in custom JSON, tokens in DoH URLs
+    private val secretValueKeys = setOf(Key.GLOBAL_CUSTOM_CONFIG, Key.REMOTE_DNS, Key.DIRECT_DNS)
 
     // main and :bg may both start without a token: insert-or-ignore lets the first one win for both
     private fun persistentToken(key: String): String {

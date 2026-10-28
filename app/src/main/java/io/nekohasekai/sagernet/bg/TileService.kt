@@ -53,7 +53,17 @@ class TileService : BaseTileService(), SagerConnection.Callback {
     }
 
     override fun onClick() {
-        if (isLocked) unlockAndRun(this::toggle) else toggle()
+        if (isLocked) unlockAndRun(this::clicked) else clicked()
+    }
+
+    private fun clicked() {
+        // without the consent the VPN can not be running: ask right here, in the click, where
+        // starting an activity is allowed (toggle() may run later, once the service connects)
+        if (DataStore.serviceMode == Key.MODE_VPN && android.net.VpnService.prepare(this) != null) {
+            requestVpnConsent()
+        } else {
+            toggle()
+        }
     }
 
     private fun updateTile(serviceState: BaseService.State, profileName: String?) {
@@ -93,13 +103,7 @@ class TileService : BaseTileService(), SagerConnection.Callback {
             true else BaseService.State.values()[service.state].let { state ->
             when {
                 state.canStop -> SagerNet.stopService()
-                state == BaseService.State.Stopped -> {
-                    if (DataStore.serviceMode == Key.MODE_VPN && android.net.VpnService.prepare(this) != null) {
-                        requestVpnConsent()
-                    } else {
-                        SagerNet.startService()
-                    }
-                }
+                state == BaseService.State.Stopped -> SagerNet.startService()
             }
         }
     }
