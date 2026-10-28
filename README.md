@@ -1,101 +1,67 @@
-# NekoBox for Android
+# Niko
 
-[![API](https://img.shields.io/badge/API-21%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=21)
-[![Releases](https://img.shields.io/github/v/release/MatsuriDayo/NekoBoxForAndroid)](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases)
-[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-orange.svg)](https://www.gnu.org/licenses/gpl-3.0)
+Proxy client for Android built on [sing-box](https://github.com/SagerNet/sing-box).
+A fork of [NekoBox for Android](https://github.com/MatsuriDayo/NekoBoxForAndroid).
 
-sing-box / universal proxy toolchain for Android.
+[Русская версия ниже](#niko-ru)
 
-一款使用 sing-box 的 Android 通用代理软件.
+## Download
 
-## 下载 / Downloads
+APKs for arm64-v8a, armeabi-v7a, x86 and x86_64 are on the [Releases](../../releases) page, with
+`SHA256SUMS` next to them. Android 6.0+.
 
-[![GitHub All Releases](https://img.shields.io/github/downloads/Matsuridayo/NekoBoxForAndroid/total?label=downloads-total&logo=github&style=flat-square)](https://github.com/Matsuridayo/NekoBoxForAndroid/releases)
+## Protocols
 
-[GitHub Releases 下载](https://github.com/Matsuridayo/NekoBoxForAndroid/releases)
+SOCKS 4/4a/5, HTTP(S), SSH, Shadowsocks, VMess, VLESS (REALITY, XHTTP), Trojan, AnyTLS, ShadowTLS,
+TUIC, Hysteria 1/2, WireGuard. With NekoBox plugins: Trojan-Go, NaïveProxy, Mieru.
 
-**Google Play 版本自 2024 年 5 月起已被第三方控制，为非开源版本，请不要下载。**
+## What the fork adds
 
-**The Google Play version has been controlled by a third party since May 2024 and is a non-open
-source version. Please do not download it.**
+- sing-box 1.14 core with XHTTP and REALITY with post-quantum key exchange
+- Port knocking before connecting
+- TLS ClientHello fragmentation and certificate pinning
+- Remote rule-sets (`.srs`/`.json`), subscription headers, HWID for panels
+- Hysteria2 UDP and many smaller fixes; see [Releases](../../releases)
 
-## 更新日志 & Telegram 发布频道 / Changelog & Telegram Channel
+## Subscriptions
 
-https://t.me/Matsuridayo
+Shadowsocks, ClashMeta, v2rayN and sing-box outbound formats. Only servers are imported, routing
+rules from the subscription are ignored.
 
-## 项目主页 & 文档 / Homepage & Documents
+## Build
 
-https://matsuridayo.github.io
+See [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md) (Russian).
 
-## 支持的代理协议 / Supported Proxy Protocols
+---
 
-* SOCKS (4/4a/5)
-* HTTP(S)
-* SSH
-* Shadowsocks
-* VMess
-* Trojan
-* VLESS
-* AnyTLS
-* ShadowTLS
-* TUIC
-* Hysteria 1/2
-* WireGuard
-* Trojan-Go (trojan-go-plugin)
-* NaïveProxy (naive-plugin)
-* Mieru (mieru-plugin)
+<a id="niko-ru"></a>
 
-请到[这里](https://matsuridayo.github.io/nb4a-plugin/)下载插件以获得完整的代理支持.
+# Niko (RU)
 
-Please visit [here](https://matsuridayo.github.io/nb4a-plugin/) to download plugins for full proxy
-supports.
+Прокси-клиент для Android на [sing-box](https://github.com/SagerNet/sing-box). Форк
+[NekoBox for Android](https://github.com/MatsuriDayo/NekoBoxForAndroid).
 
-## 支持的订阅格式 / Supported Subscription Format
+- **Скачать:** APK для arm64-v8a, armeabi-v7a, x86 и x86_64 на странице [Releases](../../releases), рядом
+  `SHA256SUMS`. Android 6.0+.
+- **Протоколы:** SOCKS 4/4a/5, HTTP(S), SSH, Shadowsocks, VMess, VLESS (REALITY, XHTTP), Trojan, AnyTLS,
+  ShadowTLS, TUIC, Hysteria 1/2, WireGuard. С плагинами NekoBox: Trojan-Go, NaïveProxy, Mieru.
+- **Что добавлено в форке:** ядро sing-box 1.14 с XHTTP и постквантовым REALITY, port knocking,
+  фрагментация TLS ClientHello и пиннинг сертификатов, remote rule-set, заголовки подписок и HWID,
+  исправления UDP в Hysteria2 и многое другое (см. [Releases](../../releases)).
+- **Подписки:** форматы Shadowsocks, ClashMeta, v2rayN и outbound sing-box. Импортируются только серверы.
 
-* 一些广泛使用的格式 (如 Shadowsocks, ClashMeta 和 v2rayN)
-* sing-box 出站
+---
 
-仅支持解析出站，即节点。分流规则等信息会被忽略。
+## License / Лицензия
 
-* Some widely used formats (like Shadowsocks, ClashMeta and v2rayN)
-* sing-box outbound
+GPL-3.0, see [LICENSE](LICENSE). Niko is a modified version of the projects below; their copyrights
+stay with their authors.
 
-Only resolving outbound, i.e. nodes, is supported. Information such as diversion rules are ignored.
-
-## 捐助 / Donate
-
-<details>
-
-如果这个项目对您有帮助, 可以通过捐赠的方式帮助我们维持这个项目.
-
-捐赠满等额 50 USD 可以在「[捐赠榜](https://mtrdnt.pages.dev/donation_list)」显示头像, 如果您未被添加到这里,
-欢迎联系我们补充.
-
-Donations of 50 USD or more can display your avatar on
-the [Donation List](https://mtrdnt.pages.dev/donation_list). If you are not added here, please
-contact us to add it.
-
-USDT TRC20
-
-`TRhnA7SXE5Sap5gSG3ijxRmdYFiD4KRhPs`
-
-XMR
-
-`49bwESYQjoRL3xmvTcjZKHEKaiGywjLYVQJMUv79bXonGiyDCs8AzE3KiGW2ytTybBCpWJUvov8SjZZEGg66a4e59GXa6k5`
-
-</details>
-
-## Credits
-
-Core:
-
-- [SagerNet/sing-box](https://github.com/SagerNet/sing-box)
-
-Android GUI:
-
-- [shadowsocks/shadowsocks-android](https://github.com/shadowsocks/shadowsocks-android)
-- [SagerNet/SagerNet](https://github.com/SagerNet/SagerNet)
-
-Web Dashboard:
-
-- [Yacd-meta](https://github.com/MetaCubeX/Yacd-meta)
+| Project | Authors | License |
+| --- | --- | --- |
+| [NekoBox for Android](https://github.com/MatsuriDayo/NekoBoxForAndroid) | MatsuriDayo | GPL-3.0 |
+| [libneko](https://github.com/MatsuriDayo/libneko) | MatsuriDayo | not stated, used as in NekoBox |
+| [SagerNet](https://github.com/SagerNet/SagerNet), [sing-box](https://github.com/SagerNet/sing-box), [sing-quic](https://github.com/SagerNet/sing-quic) | nekohasekai | GPL-3.0 |
+| [sing-box-lx](https://github.com/Leadaxe/sing-box-lx) (XHTTP, REALITY changes) | Leadaxe | GPL-3.0 |
+| [shadowsocks-android](https://github.com/shadowsocks/shadowsocks-android) | shadowsocks | GPL-3.0 |
+| [Yacd-meta](https://github.com/MetaCubeX/Yacd-meta) | MetaCubeX | MIT |

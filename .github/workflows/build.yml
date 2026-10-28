@@ -42,7 +42,7 @@ jobs:
         id: key
         run: |
           # SingBoxOptions.java is checked against the core by libcore's options_drift_test.go
-          key=$(git ls-files -z buildScript libcore app/src/main/java/moe/matsuri/nb4a/SingBoxOptions.java \
+          key=$(git ls-files -z buildScript libcore app/src/main/java/io/niko/SingBoxOptions.java \
             | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
           echo "key=libcore-${NDK_VERSION}-${key}" >> "$GITHUB_OUTPUT"
 

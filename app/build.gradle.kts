@@ -27,7 +27,7 @@ android {
         viewBinding = true
         aidl = true
     }
-    namespace = "io.nekohasekai.sagernet"
+    namespace = "io.niko"
     packaging {
         jniLibs {
             useLegacyPackaging = true

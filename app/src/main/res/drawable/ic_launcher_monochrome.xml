@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- themed icon: the launcher icon's silhouette with the "N" cut out -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M30,69V53L35,26L50.87,40H57.13L73,26L78,53V69A11,11 0,0 1,67 80H41A11,11 0,0 1,30 69Z
+            M41,71V51H47.5L61,64.85V51H67V71H60.5L47,57.15V71Z" />
+</vector>

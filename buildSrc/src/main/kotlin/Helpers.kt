@@ -19,7 +19,7 @@ private lateinit var localProperties: Properties
 fun Project.requireMetadata(): Properties {
     if (!::metadata.isInitialized) {
         metadata = Properties().apply {
-            load(rootProject.file("nb4a.properties").inputStream())
+            load(rootProject.file("niko.properties").inputStream())
         }
     }
     return metadata
@@ -216,10 +216,10 @@ fun Project.setupApp() {
                 outputFileName = if (isPreview) {
                     outputFileName.replace(
                         project.name,
-                        "NekoBox-" + requireMetadata().getProperty("PRE_VERSION_NAME")
+                        "Niko-" + requireMetadata().getProperty("PRE_VERSION_NAME")
                     ).replace("-preview", "")
                 } else {
-                    outputFileName.replace(project.name, "NekoBox-$versionName")
+                    outputFileName.replace(project.name, "Niko-$versionName")
                         .replace("-release", "")
                         .replace("-oss", "")
                 }

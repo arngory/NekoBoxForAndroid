@@ -17,7 +17,7 @@ import (
 // rejects unknown fields. This test compares those classes with the option structs of the core
 // in use: a field sing-box no longer knows fails the test, new core fields are only logged.
 
-const javaOptionsPath = "../app/src/main/java/moe/matsuri/nb4a/SingBoxOptions.java"
+const javaOptionsPath = "../app/src/main/java/io/niko/SingBoxOptions.java"
 
 var javaOptionStructs = map[string][]any{
 	"Outbound_DirectOptions":      {option.DirectOutboundOptions{}},

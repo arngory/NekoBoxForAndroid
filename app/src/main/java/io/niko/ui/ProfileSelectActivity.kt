@@ -1,0 +1,37 @@
+package io.niko.ui
+
+import android.content.Intent
+import android.os.Bundle
+import io.niko.R
+import io.niko.database.ProxyEntity
+
+class ProfileSelectActivity : ThemedActivity(R.layout.layout_empty),
+    ConfigurationFragment.SelectCallback {
+
+    companion object {
+        const val EXTRA_SELECTED = "selected"
+        const val EXTRA_PROFILE_ID = "id"
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val selected = intent.getParcelableExtra<ProxyEntity>(EXTRA_SELECTED)
+
+        // after recreation the fragment manager restores the fragment with its arguments
+        if (savedInstanceState == null) supportFragmentManager.beginTransaction()
+            .replace(
+                R.id.fragment_holder,
+                ConfigurationFragment(true, selected, R.string.select_profile)
+            )
+            .commitAllowingStateLoss()
+    }
+
+    override fun returnProfile(profileId: Long) {
+        setResult(RESULT_OK, Intent().apply {
+            putExtra(EXTRA_PROFILE_ID, profileId)
+        })
+        finish()
+    }
+
+}

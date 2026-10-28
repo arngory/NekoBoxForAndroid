@@ -1,0 +1,32 @@
+package io.niko.database.preference
+
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import dev.matrix.roomigrant.GenerateRoomMigrations
+import io.niko.Key
+import io.niko.SagerNet
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+
+@Database(entities = [KeyValuePair::class], version = 1)
+@GenerateRoomMigrations
+abstract class PublicDatabase : RoomDatabase() {
+    companion object {
+        val instance by lazy {
+            SagerNet.application.getDatabasePath(Key.DB_PROFILE).parentFile?.mkdirs()
+            Room.databaseBuilder(SagerNet.application, PublicDatabase::class.java, Key.DB_PUBLIC)
+                .setJournalMode(JournalMode.TRUNCATE)
+                .allowMainThreadQueries()
+                .enableMultiInstanceInvalidation()
+                // no destructive fallback: a schema bump without a migration must not wipe settings
+                .setQueryExecutor { GlobalScope.launch { it.run() } }
+                .build()
+        }
+
+        val kvPairDao get() = instance.keyValuePairDao()
+    }
+
+    abstract fun keyValuePairDao(): KeyValuePair.Dao
+
+}

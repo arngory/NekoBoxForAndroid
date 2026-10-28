@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Niko launcher icon: a cat head with an "N" -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M41,40H67A11,11 0,0 1,78 51V69A11,11 0,0 1,67 80H41A11,11 0,0 1,30 69V51A11,11 0,0 1,41 40Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,53L35,26L52,41ZM56,41L73,26L78,53Z" />
+    <path
+        android:fillColor="#1F8BD1"
+        android:pathData="M41,51H47V71H41ZM61,51H67V71H61ZM41,51H47.5L67,71H60.5Z" />
+</vector>
