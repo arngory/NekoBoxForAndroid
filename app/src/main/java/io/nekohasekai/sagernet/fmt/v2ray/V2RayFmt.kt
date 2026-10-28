@@ -670,6 +670,7 @@ fun buildSingBoxOutboundTLS(bean: StandardV2RayBean): OutboundTLSOptions? {
                 enabled = true
                 public_key = bean.realityPubKey
                 short_id = bean.realityShortId
+                if (!bean.realityKeyShare.isNullOrBlank()) key_share = bean.realityKeyShare
             }
             if (fp.isNullOrBlank()) fp = "chrome"
         }

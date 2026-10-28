@@ -2166,6 +2166,9 @@ public class SingBoxOptions {
 
         public String short_id;
 
+        // core fork (from sing-box-lx): "", "hybrid" or "classical"
+        public String key_share;
+
     }
 
     public static class InboundACMEOptions extends SingBoxOption {

@@ -39,6 +39,8 @@ public abstract class StandardV2RayBean extends AbstractBean {
     public String realityPubKey;
 
     public String realityShortId;
+    // version 6: "" = as the fingerprint carries it, "hybrid", "classical"
+    public String realityKeyShare;
 
 
     // --------------------------------------- //
@@ -104,6 +106,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
 
         if (realityPubKey == null) realityPubKey = "";
         if (realityShortId == null) realityShortId = "";
+        if (realityKeyShare == null) realityKeyShare = "";
 
         if (enableECH == null) enableECH = false;
         if (JavaUtil.isNullOrBlank(echConfig)) echConfig = "";
@@ -119,7 +122,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
 
     @Override
     public void serialize(ByteBufferOutput output) {
-        output.writeInt(5);
+        output.writeInt(6);
         super.serialize(output);
         output.writeString(uuid);
         output.writeString(encryption);
@@ -179,6 +182,8 @@ public abstract class StandardV2RayBean extends AbstractBean {
         output.writeBoolean(muxPadding);
         output.writeInt(muxType);
         output.writeInt(muxConcurrency);
+
+        output.writeString(realityKeyShare == null ? "" : realityKeyShare);
     }
 
     @Override
@@ -276,6 +281,9 @@ public abstract class StandardV2RayBean extends AbstractBean {
             muxPadding = input.readBoolean();
             muxType = input.readInt();
             muxConcurrency = input.readInt();
+        }
+        if (version >= 6) {
+            realityKeyShare = input.readString();
         }
     }
 

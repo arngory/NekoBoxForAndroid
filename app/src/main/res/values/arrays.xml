@@ -267,6 +267,18 @@
         <item>xhttp</item>
     </string-array>
 
+    <string-array name="reality_key_share_entries">
+        <item>@string/reality_key_share_auto</item>
+        <item>@string/reality_key_share_hybrid</item>
+        <item>@string/reality_key_share_classical</item>
+    </string-array>
+
+    <string-array name="reality_key_share_values" translatable="false">
+        <item />
+        <item>hybrid</item>
+        <item>classical</item>
+    </string-array>
+
     <string-array name="xhttp_modes" translatable="false">
         <item>auto</item>
         <item>packet-up</item>
