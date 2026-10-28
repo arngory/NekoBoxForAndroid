@@ -164,6 +164,13 @@ func (b *BoxInstance) Start() (err error) {
 	return err
 }
 
+// CancelStart makes a running Start return soon; the instance must still be closed afterwards.
+func (b *BoxInstance) CancelStart() {
+	if b.cancel != nil {
+		b.cancel()
+	}
+}
+
 func (b *BoxInstance) Close() (err error) {
 	// cancel before taking the lock: a Start blocked on a download holds it until its context ends
 	if b.cancel != nil {

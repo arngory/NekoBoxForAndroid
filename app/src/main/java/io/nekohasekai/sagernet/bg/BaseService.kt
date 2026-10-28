@@ -247,10 +247,13 @@ class BaseService {
             data.changeState(State.Stopping)
 
             runOnMainDispatcher {
-                // Stop connecting first. The core start runs on an IO thread and only returns once
-                // close() (in killProcesses) cancels it, so join after closing, not before.
+                // Stop connecting first: cancel the core start (it runs on an IO thread and may wait
+                // on a download), wait for the launch to return, and only then close, so close()
+                // never overlaps launch().
                 val connecting = data.connectingJob
                 connecting?.cancel()
+                data.proxy?.takeIf { it.isInitialized() }?.box?.cancelStart()
+                connecting?.join()
                 // we use a coroutineScope here to allow clean-up in parallel
                 coroutineScope {
                     killProcesses()
@@ -261,7 +264,6 @@ class BaseService {
                     }
                     data.proxy = null
                 }
-                connecting?.join()
 
                 // change the state
                 data.changeState(State.Stopped, msg)

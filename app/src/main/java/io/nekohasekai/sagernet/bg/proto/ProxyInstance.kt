@@ -5,7 +5,8 @@ import io.nekohasekai.sagernet.bg.BaseService
 import io.nekohasekai.sagernet.bg.ServiceNotification
 import io.nekohasekai.sagernet.database.ProxyEntity
 import io.nekohasekai.sagernet.ktx.Logs
-import io.nekohasekai.sagernet.ktx.runOnDefaultDispatcher
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.runBlocking
 import moe.matsuri.nb4a.utils.JavaUtil
 
@@ -46,13 +47,13 @@ class ProxyInstance(profile: ProxyEntity, var service: BaseService.Interface? = 
         super.loadConfig()
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun launch() {
         box.setAsMain()
         super.launch() // start box
-        runOnDefaultDispatcher {
-            looper = service?.let { TrafficLooper(it.data, this) }
-            looper?.start()
-        }
+        // created right here, not in a coroutine: a close() after launch() must find it to stop it
+        looper = service?.let { TrafficLooper(it.data, GlobalScope) }
+        looper?.start()
     }
 
     override fun close() {
