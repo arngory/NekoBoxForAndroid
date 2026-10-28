@@ -46,6 +46,10 @@ public abstract class StandardV2RayBean extends AbstractBean {
     public Integer wsMaxEarlyData;
     public String earlyDataHeaderName;
 
+    // XHTTP (version 5): auto, packet-up, stream-up, stream-one; extra is Xray's "extra" JSON
+    public String xhttpMode;
+    public String xhttpExtra;
+
     public String certificates;
 
     // --------------------------------------- ech
@@ -108,11 +112,14 @@ public abstract class StandardV2RayBean extends AbstractBean {
         if (muxPadding == null) muxPadding = false;
         if (muxType == null) muxType = 0;
         if (muxConcurrency == null) muxConcurrency = 1;
+
+        if (JavaUtil.isNullOrBlank(xhttpMode)) xhttpMode = "auto";
+        if (xhttpExtra == null) xhttpExtra = "";
     }
 
     @Override
     public void serialize(ByteBufferOutput output) {
-        output.writeInt(4);
+        output.writeInt(5);
         super.serialize(output);
         output.writeString(uuid);
         output.writeString(encryption);
@@ -137,6 +144,13 @@ public abstract class StandardV2RayBean extends AbstractBean {
             case "httpupgrade": {
                 output.writeString(host);
                 output.writeString(path);
+                break;
+            }
+            case "xhttp": {
+                output.writeString(host);
+                output.writeString(path);
+                output.writeString(xhttpMode);
+                output.writeString(xhttpExtra);
                 break;
             }
             case "grpc": {
@@ -194,6 +208,13 @@ public abstract class StandardV2RayBean extends AbstractBean {
             case "httpupgrade": {
                 host = input.readString();
                 path = input.readString();
+                break;
+            }
+            case "xhttp": {
+                host = input.readString();
+                path = input.readString();
+                xhttpMode = input.readString();
+                xhttpExtra = input.readString();
                 break;
             }
             case "grpc": {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 <string name="abc_search_hint">Введите запрос</string>
 <string name="abc_searchview_description_clear">Удалить запрос</string>
 <string name="abc_searchview_description_search">Поиск</string>
@@ -148,6 +148,9 @@
 <string name="dns_optimistic_cache">Оптимистичный DNS-кеш</string>
 <string name="dns_optimistic_cache_sum">Сразу отвечать из истёкшей записи кеша и обновлять её в фоне: быстрее на медленной мобильной сети, но один запрос может получить устаревший адрес</string>
 <string name="hop_interval_max">Макс. интервал смены порта, секунд (0 — фиксированный)</string>
+<string name="xhttp_mode">Режим</string>
+<string name="xhttp_extra">Extra (JSON)</string>
+<string name="xhttp_extra_help" tools:ignore="TypographyDashes">Объект «extra» из Xray, например {"xPaddingBytes": "100-1000", "xmux": {"maxConcurrency": "16-32"}}. Ключи, которые ядро не поддерживает (downloadSettings), пропускаются.</string>
 <string name="group_auto_select">Авто (наименьшая задержка)</string>
 <string name="group_auto_select_sum">Запуск любого профиля группы подключает через профиль с наименьшей задержкой, проверка каждые 3 минуты</string>
 <string name="subscription_send_hwid">Отправлять ID устройства (HWID)</string>

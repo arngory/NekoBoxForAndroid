@@ -264,6 +264,14 @@
         <item>quic</item>
         <item>grpc</item>
         <item>httpupgrade</item>
+        <item>xhttp</item>
+    </string-array>
+
+    <string-array name="xhttp_modes" translatable="false">
+        <item>auto</item>
+        <item>packet-up</item>
+        <item>stream-up</item>
+        <item>stream-one</item>
     </string-array>
 
     <string-array name="trojan_go_networks_entry">

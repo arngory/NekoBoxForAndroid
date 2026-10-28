@@ -154,6 +154,7 @@ fun StandardV2RayBean.parseDuckSoft(url: HttpUrl) {
 
     type = url.queryParameter("type") ?: "tcp"
     if (type == "h2" || url.queryParameter("headerType") == "http") type = "http"
+    if (type == "splithttp") type = "xhttp" // the old Xray name
 
     security = url.queryParameter("security")
     if (security.isNullOrBlank()) {
@@ -232,6 +233,21 @@ fun StandardV2RayBean.parseDuckSoft(url: HttpUrl) {
             }
             url.queryParameter("path")?.let {
                 path = it
+            }
+        }
+
+        "xhttp" -> {
+            url.queryParameter("host")?.let {
+                host = it
+            }
+            url.queryParameter("path")?.let {
+                path = it
+            }
+            url.queryParameter("mode")?.takeIf { it.isNotBlank() }?.let {
+                xhttpMode = it
+            }
+            url.queryParameter("extra")?.takeIf { it.isNotBlank() }?.let {
+                xhttpExtra = it
             }
         }
     }
@@ -506,6 +522,13 @@ fun StandardV2RayBean.toUriVMessVLESSTrojan(isTrojan: Boolean): String {
                 builder.setQueryParameter("serviceName", path)
             }
         }
+
+        "xhttp" -> {
+            if (host.isNotBlank()) builder.addQueryParameter("host", host)
+            if (path.isNotBlank()) builder.addQueryParameter("path", path)
+            if (xhttpMode.isNotBlank()) builder.addQueryParameter("mode", xhttpMode)
+            if (xhttpExtra.isNotBlank()) builder.addQueryParameter("extra", xhttpExtra)
+        }
     }
 
     if (security.isNotBlank() && security != "none") {
@@ -618,6 +641,14 @@ fun buildSingBoxOutboundStreamSettings(bean: StandardV2RayBean): V2RayTransportO
                 type = "httpupgrade"
                 host = bean.host
                 path = bean.path
+            }
+        }
+
+        "xhttp" -> {
+            // the core's XHTTP client comes from sing-box-lx; Java classes do not model it
+            return V2RayTransportOptions().apply {
+                type = "xhttp"
+                _hack_config_map.putAll(buildXhttpOptions(bean))
             }
         }
     }

@@ -42,6 +42,8 @@ import (
 
 	_ "github.com/sagernet/sing-box/experimental/clashapi"
 	_ "github.com/sagernet/sing-box/transport/v2rayquic"
+	// XHTTP (from sing-box-lx) registers itself only when built with with_xhttp
+	_ "github.com/sagernet/sing-box/transport/v2rayxhttp"
 )
 
 func nekoboxAndroidInboundRegistry() *inbound.Registry {

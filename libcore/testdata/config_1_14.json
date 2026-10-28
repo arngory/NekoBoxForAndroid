@@ -143,6 +143,34 @@
   {
    "type": "block",
    "tag": "block"
+  },
+  {
+   "type": "vless",
+   "tag": "xhttp-test",
+   "server": "vless.example.com",
+   "server_port": 443,
+   "uuid": "bf000d23-0752-40b4-affe-68f7707a9661",
+   "flow": "xtls-rprx-vision",
+   "tls": {
+    "enabled": true,
+    "server_name": "vless.example.com",
+    "utls": {
+     "enabled": true,
+     "fingerprint": "chrome"
+    },
+    "record_fragment": true,
+    "certificate_public_key_sha256": [
+     "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="
+    ],
+    "certificate": []
+   },
+   "detour": "g-1-knock",
+   "transport": {
+    "type": "xhttp",
+    "host": "cdn.example.com",
+    "path": "/xh",
+    "mode": "auto"
+   }
   }
  ],
  "endpoints": [

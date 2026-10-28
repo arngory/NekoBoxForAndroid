@@ -79,6 +79,25 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:key="serverXhttpCategory"
+        app:title="XHTTP">
+        <moe.matsuri.nb4a.ui.SimpleMenuPreference
+            app:defaultValue="auto"
+            app:entries="@array/xhttp_modes"
+            app:entryValues="@array/xhttp_modes"
+            app:icon="@drawable/ic_baseline_stream_24"
+            app:key="xhttpMode"
+            app:title="@string/xhttp_mode"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:dialogMessage="@string/xhttp_extra_help"
+            app:icon="@drawable/ic_baseline_compare_arrows_24"
+            app:key="xhttpExtra"
+            app:title="@string/xhttp_extra"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:key="serverWsCategory"
         app:title="@string/cag_ws">
         <EditTextPreference
