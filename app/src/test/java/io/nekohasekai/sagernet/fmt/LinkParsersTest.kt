@@ -1,5 +1,6 @@
 package io.nekohasekai.sagernet.fmt
 
+import io.nekohasekai.sagernet.fmt.hysteria.hopPortsToSingboxList
 import io.nekohasekai.sagernet.fmt.hysteria.parseHysteria2
 import io.nekohasekai.sagernet.fmt.v2ray.VMessBean
 import io.nekohasekai.sagernet.fmt.v2ray.echShareParameter
@@ -41,6 +42,13 @@ class LinkParsersTest {
     }
 
     @Test
+    fun hopPortsBecomeRanges() {
+        assertEquals(listOf("443:443", "5000:6000"), hopPortsToSingboxList("443,5000-6000"))
+        assertEquals(listOf("443:443", "8443:8443"), hopPortsToSingboxList("443, 8443"))
+        assertEquals(listOf("20000:30000"), hopPortsToSingboxList("20000:30000"))
+    }
+
+    @Test
     fun vlessInsecureAndEch() {
         val bean = VMessBean().apply { alterId = -1 }
         bean.parseDuckSoft(
@@ -54,14 +62,20 @@ class LinkParsersTest {
         )
         assertEquals("AEX+DQBBpQAgACCd/w==", bean.echShareParameter())
 
-        // "<domain>+<dns>" means: look the config up over DNS
+        // "<domain>+<dns>" can not be expressed in sing-box options: no ECH rather than a broken one
         val dns = VMessBean().apply { alterId = -1 }
         dns.parseDuckSoft(
             "https://uuid@example.com:443?security=tls&ech=cloudflare-ech.com%2Bhttps://1.1.1.1/dns-query".toHttpUrl()
         )
-        assertTrue(dns.enableECH)
-        assertTrue(dns.echConfig.isNullOrBlank())
+        assertFalse(dns.enableECH == true)
         assertEquals(null, dns.echShareParameter())
+
+        // REALITY conflicts with ECH
+        val reality = VMessBean().apply { alterId = -1 }
+        reality.parseDuckSoft(
+            "https://uuid@example.com:443?security=reality&pbk=key&ech=AEX%2BDQBBpQAgACCd_w".toHttpUrl()
+        )
+        assertFalse(reality.enableECH == true)
 
         val plain = VMessBean().apply { alterId = -1 }
         plain.parseDuckSoft("https://uuid@example.com:443?security=tls".toHttpUrl())

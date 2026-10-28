@@ -169,7 +169,8 @@ fun StandardV2RayBean.parseDuckSoft(url: HttpUrl) {
             url.queryParameter("insecure")?.let {
                 if (it == "1" || it == "true") allowInsecure = true
             }
-            url.queryParameter("ech")?.takeIf { it.isNotBlank() }?.let {
+            // REALITY and ECH exclude each other in sing-box
+            url.queryParameter("ech")?.takeIf { it.isNotBlank() && url.queryParameter("security") != "reality" }?.let {
                 applyEchParameter(it)
             }
             url.queryParameter("sni")?.let {
@@ -264,14 +265,15 @@ private const val ECH_PEM_BEGIN = "-----BEGIN ECH CONFIGS-----"
 private const val ECH_PEM_END = "-----END ECH CONFIGS-----"
 
 /**
- * Xray "ech" share parameter: a base64 ECHConfigList, or "<domain>+<DNS server>" to look it up.
- * sing-box looks the config up over DNS by itself when none is given.
+ * Xray "ech" share parameter: a base64 ECHConfigList, or "<domain>+<DNS server>" to look the
+ * config up. Only the first is carried over: the profile has no field for the lookup domain, and
+ * sing-box would look up the SNI instead, which fails when only the other domain has the record.
  */
 fun StandardV2RayBean.applyEchParameter(value: String) {
-    enableECH = true
     val config = value.replace(' ', '+') // an unescaped "+" in a query arrives as a space
     if (!config.contains('.') && config.matches(Regex("[A-Za-z0-9+/=_-]{16,}"))) {
         val base64 = config.replace('-', '+').replace('_', '/').trimEnd('=')
+        enableECH = true
         echConfig = ECH_PEM_BEGIN + "\n" + base64 + "=".repeat((4 - base64.length % 4) % 4) +
             "\n" + ECH_PEM_END
     }

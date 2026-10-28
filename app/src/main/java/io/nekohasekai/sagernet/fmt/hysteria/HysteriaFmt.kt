@@ -370,13 +370,14 @@ fun buildSingBoxOutboundHysteriaBean(bean: HysteriaBean): SingBoxOptions.SingBox
     }
 }
 
+/** "443,5000-6000" -> ["443:443", "5000:6000"]: sing-box takes ranges only. */
 fun hopPortsToSingboxList(s: String): List<String> {
-    return s.split(",").mapNotNull {
+    return s.split(",").map { it.trim() }.mapNotNull {
         val pRange = it.replace("-", ":")
-        if (pRange.split(":").size == 2) {
-            pRange
-        } else {
-            null
+        when {
+            pRange.toIntOrNull() != null -> "$pRange:$pRange"
+            pRange.split(":").size == 2 -> pRange
+            else -> null
         }
     }
 }

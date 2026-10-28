@@ -44,6 +44,7 @@ class QuickToggleShortcut : Activity(), SagerConnection.Callback {
     companion object {
         private const val LEGACY_ALIAS = "io.nekohasekai.sagernet.QuickToggleShortcutLegacy"
         private const val EXTRA_TOKEN = "token"
+        private const val ACTION_INSTALL_SHORTCUT = "com.android.launcher.action.INSTALL_SHORTCUT"
 
         /** Intent for a pinned shortcut that toggles [profileId], or the selected profile for -1. */
         fun shortcutIntent(context: Context, profileId: Long = -1L): Intent {
@@ -84,9 +85,10 @@ class QuickToggleShortcut : Activity(), SagerConnection.Callback {
             }
             // ShortcutManagerCompat would send the token in an implicit broadcast any app can receive
             val launcher = defaultLauncher(context) ?: return false
+            val install = Intent(ACTION_INSTALL_SHORTCUT).setPackage(launcher)
+            if (context.packageManager.queryBroadcastReceivers(install, 0).isEmpty()) return false
             context.sendBroadcast(
-                Intent("com.android.launcher.action.INSTALL_SHORTCUT")
-                    .setPackage(launcher)
+                install
                     .putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent(context, profileId))
                     .putExtra(Intent.EXTRA_SHORTCUT_NAME, label)
                     .putExtra(

@@ -9,6 +9,7 @@ import io.nekohasekai.sagernet.Key
 import io.nekohasekai.sagernet.TunImplementation
 import io.nekohasekai.sagernet.bg.BaseService
 import io.nekohasekai.sagernet.bg.VpnService
+import io.nekohasekai.sagernet.database.preference.KeyValuePair
 import io.nekohasekai.sagernet.database.preference.OnPreferenceDataStoreChangeListener
 import io.nekohasekai.sagernet.database.preference.PublicDatabase
 import io.nekohasekai.sagernet.database.preference.RoomPreferenceDataStore
@@ -187,21 +188,16 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var yacdURL by configurationStore.string("yacdURL") { "http://127.0.0.1:9090/ui" }
 
     // every app on the device can reach 127.0.0.1, so the Clash API and exported shortcuts need a token
-    private var clashApiSecretStored by configurationStore.string("clashApiSecret")
-    val clashApiSecret: String
-        get() = clashApiSecretStored.ifBlank {
-            clashApiSecretStored = randomToken()
-            clashApiSecretStored // another process may have written first: use what is stored
-        }
-    private var shortcutTokenStored by configurationStore.string("shortcutToken")
-    val shortcutToken: String
-        get() = shortcutTokenStored.ifBlank {
-            shortcutTokenStored = randomToken()
-            shortcutTokenStored
-        }
+    val clashApiSecret get() = persistentToken("clashApiSecret")
+    val shortcutToken get() = persistentToken("shortcutToken")
 
-    private fun randomToken() = ByteArray(16).also { SecureRandom().nextBytes(it) }
-        .joinToString("") { "%02x".format(it) }
+    // main and :bg may both start without a token: insert-or-ignore lets the first one win for both
+    private fun persistentToken(key: String): String {
+        configurationStore.getString(key)?.takeIf { it.isNotBlank() }?.let { return it }
+        val token = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
+        PublicDatabase.kvPairDao.putIfAbsent(KeyValuePair(key).put(token))
+        return configurationStore.getString(key)?.takeIf { it.isNotBlank() } ?: token
+    }
 
     // protocol
 

@@ -59,7 +59,7 @@ class SagerNet : Application(),
         if (isMainProcess || isBgProcess) {
             DataStore.migrateLegacySettings()
             if (isMainProcess) {
-                // create the per-install tokens before the :bg process can race for them
+                // create the per-install tokens early; creation is atomic across processes
                 DataStore.clashApiSecret
                 DataStore.shortcutToken
             }

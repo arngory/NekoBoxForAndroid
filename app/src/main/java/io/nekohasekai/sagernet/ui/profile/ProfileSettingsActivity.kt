@@ -396,7 +396,7 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
                 val activity = requireActivity() as ProfileSettingsActivity<*>
                 val ent = activity.proxyEntity!!
                 if (!QuickToggleShortcut.pinProfileShortcut(activity, ent.id, ent.displayName())) {
-                    Logs.w("no default launcher to pin the shortcut to")
+                    Toast.makeText(activity, R.string.shortcut_pin_unsupported, Toast.LENGTH_LONG).show()
                 }
                 true
             }
