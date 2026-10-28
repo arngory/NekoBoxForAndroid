@@ -182,10 +182,12 @@ object DataStore : OnPreferenceDataStoreChangeListener {
 
     // every app on the device can reach 127.0.0.1, so the Clash API and exported shortcuts need a token
     val clashApiSecret get() = persistentToken("clashApiSecret")
+    /** Random device id for subscription panels that limit devices (x-hwid), not the Android ID. */
+    val subscriptionHwid get() = persistentToken("subscriptionHwid")
     val shortcutToken get() = persistentToken("shortcutToken")
 
     /** Secrets of this installation: not exported, not restored from another device's backup. */
-    val installSecretKeys = setOf("localProxyPassword", "clashApiSecret", "shortcutToken")
+    val installSecretKeys = setOf("localProxyPassword", "clashApiSecret", "shortcutToken", "subscriptionHwid")
 
     /** Settings whose values must not appear in logs or crash reports. */
     fun isSensitiveKey(key: String) = key in installSecretKeys || key in secretValueKeys ||
@@ -291,6 +293,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var subscriptionDeduplication by profileCacheStore.boolean(Key.SUBSCRIPTION_DEDUPLICATION)
     var subscriptionUpdateWhenConnectedOnly by profileCacheStore.boolean(Key.SUBSCRIPTION_UPDATE_WHEN_CONNECTED_ONLY)
     var subscriptionUserAgent by profileCacheStore.string(Key.SUBSCRIPTION_USER_AGENT)
+    var subscriptionSendHwid by profileCacheStore.boolean(Key.SUBSCRIPTION_SEND_HWID)
     var subscriptionAutoUpdate by profileCacheStore.boolean(Key.SUBSCRIPTION_AUTO_UPDATE)
     var subscriptionAutoUpdateDelay by profileCacheStore.stringToInt(Key.SUBSCRIPTION_AUTO_UPDATE_DELAY) { 360 }
 

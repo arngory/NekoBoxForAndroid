@@ -39,12 +39,16 @@ public class SubscriptionBean extends Serializable {
 
     public String subscriptionUserinfo;
 
+    // version 2
+    public Boolean sendHwid;
+    public String announce;
+
     public SubscriptionBean() {
     }
 
     @Override
     public void serializeToBuffer(ByteBufferOutput output) {
-        output.writeInt(1);
+        output.writeInt(2);
 
         output.writeInt(type);
 
@@ -59,10 +63,13 @@ public class SubscriptionBean extends Serializable {
         output.writeInt(lastUpdated);
 
         output.writeString(subscriptionUserinfo);
+
+        output.writeBoolean(Boolean.TRUE.equals(sendHwid));
+        output.writeString(announce == null ? "" : announce);
     }
 
     public void serializeForShare(ByteBufferOutput output) {
-        output.writeInt(0);
+        output.writeInt(1);
 
         output.writeInt(type);
 
@@ -72,6 +79,8 @@ public class SubscriptionBean extends Serializable {
         output.writeBoolean(deduplication);
         output.writeBoolean(updateWhenConnectedOnly);
         output.writeString(customUserAgent);
+
+        output.writeBoolean(Boolean.TRUE.equals(sendHwid));
     }
 
     @Override
@@ -88,6 +97,11 @@ public class SubscriptionBean extends Serializable {
         autoUpdateDelay = input.readInt();
         lastUpdated = input.readInt();
         subscriptionUserinfo = input.readString();
+
+        if (version >= 2) {
+            sendHwid = input.readBoolean();
+            announce = input.readString();
+        }
     }
 
     public void deserializeFromShare(ByteBufferInput input) {
@@ -99,6 +113,10 @@ public class SubscriptionBean extends Serializable {
         deduplication = input.readBoolean();
         updateWhenConnectedOnly = input.readBoolean();
         customUserAgent = input.readString();
+
+        if (version >= 1) {
+            sendHwid = input.readBoolean();
+        }
     }
 
     @Override
@@ -120,6 +138,8 @@ public class SubscriptionBean extends Serializable {
         if (username == null) username = "";
         if (expiryDate == null) expiryDate = 0;
         if (protocols == null) protocols = new ArrayList<>();
+        if (sendHwid == null) sendHwid = false;
+        if (announce == null) announce = "";
     }
 
     public static final Creator<SubscriptionBean> CREATOR = new CREATOR<SubscriptionBean>() {

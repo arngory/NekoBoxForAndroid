@@ -2,7 +2,9 @@ package io.nekohasekai.sagernet.group
 
 import io.nekohasekai.sagernet.fmt.LOCAL_PROXY_USER
 import android.annotation.SuppressLint
+import android.os.Build
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.bg.SubscriptionUpdater
 import io.nekohasekai.sagernet.database.*
 import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.fmt.http.HttpBean
@@ -49,6 +51,7 @@ object RawUpdater : GroupUpdater() {
     ) {
 
         val link = subscription.link
+        val autoUpdateBefore = subscription.autoUpdate to subscription.autoUpdateDelay
         var proxies: List<AbstractBean>
         if (link.startsWith("content://")) {
             val contentText = app.contentResolver.openInputStream(link.toUri())
@@ -71,6 +74,13 @@ object RawUpdater : GroupUpdater() {
                 }
                 setURL(subscription.link)
                 setUserAgent(subscription.customUserAgent.takeIf { it.isNotBlank() } ?: USER_AGENT)
+                // panels that limit devices (Remnawave, Marzban) identify them by these headers
+                if (subscription.sendHwid) {
+                    setHeader("x-hwid", DataStore.subscriptionHwid)
+                    setHeader("x-device-os", "Android")
+                    setHeader("x-ver-os", Build.VERSION.RELEASE)
+                    setHeader("x-device-model", Build.MODEL)
+                }
             }.execute()
             proxies = parseRaw(Util.getStringBox(response.contentString))
                 ?: error(app.getString(R.string.no_proxies_found))
@@ -78,14 +88,25 @@ object RawUpdater : GroupUpdater() {
             subscription.subscriptionUserinfo =
                 Util.getStringBox(response.getHeader("Subscription-Userinfo"))
 
-            // 修改默认名字
+            subscription.announce =
+                decodeSubscriptionHeader(Util.getStringBox(response.getHeader("announce")))
+
+            // a freshly imported subscription (default name) takes the provider's name and interval
             if (proxyGroup.name?.startsWith("Subscription #") == true) {
-                var remoteName = Util.getStringBox(response.getHeader("content-disposition"))
+                var remoteName =
+                    decodeSubscriptionHeader(Util.getStringBox(response.getHeader("profile-title")))
+                if (remoteName.isBlank()) {
+                    remoteName = Util.getStringBox(response.getHeader("content-disposition"))
+                    if (remoteName.isNotBlank()) remoteName = Util.decodeFilename(remoteName)
+                }
                 if (remoteName.isNotBlank()) {
-                    remoteName = Util.decodeFilename(remoteName)
-                    if (remoteName.isNotBlank()) {
-                        proxyGroup.name = remoteName
-                    }
+                    proxyGroup.name = remoteName
+                }
+                subscriptionUpdateIntervalMinutes(
+                    Util.getStringBox(response.getHeader("profile-update-interval"))
+                )?.let {
+                    subscription.autoUpdate = true
+                    subscription.autoUpdateDelay = it
                 }
             }
         }
@@ -235,6 +256,10 @@ object RawUpdater : GroupUpdater() {
 
         subscription.lastUpdated = (System.currentTimeMillis() / 1000).toInt()
         SagerDatabase.groupDao.updateGroup(proxyGroup)
+        // profile-update-interval may have turned the auto update on
+        if (autoUpdateBefore != (subscription.autoUpdate to subscription.autoUpdateDelay)) {
+            SubscriptionUpdater.reconfigureUpdater()
+        }
         finishUpdate(proxyGroup)
 
         userInterface?.onUpdateSuccess(

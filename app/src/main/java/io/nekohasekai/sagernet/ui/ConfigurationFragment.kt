@@ -175,6 +175,21 @@ class ConfigurationFragment @JvmOverloads constructor(
                 DataStore.selectedGroup = adapter.groupList[position].id
             }
         }
+
+        override fun onPageSelected(position: Int) {
+            adapter.groupList.getOrNull(position)?.let { showSubscriptionStatus(it.id) }
+        }
+    }
+
+    /** Traffic and expiry of the shown group's subscription under the title. */
+    fun showSubscriptionStatus(groupId: Long) {
+        if (select) return
+        runOnDefaultDispatcher {
+            val line = SagerDatabase.groupDao.getById(groupId)?.subscriptionStatusLine(app)
+            onMainDispatcher {
+                if (isAdded && DataStore.selectedGroup == groupId) toolbar.subtitle = line
+            }
+        }
     }
 
     override fun onQueryTextChange(query: String): Boolean {
@@ -1032,6 +1047,7 @@ class ConfigurationFragment @JvmOverloads constructor(
             tabLayout.post {
                 tabLayout.getTabAt(index)?.text = group.displayName()
             }
+            showSubscriptionStatus(group.id)
         }
 
         override suspend fun groupUpdated(groupId: Long) = Unit
