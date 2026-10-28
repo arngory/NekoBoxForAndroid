@@ -12,7 +12,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 fun parseSOCKS(link: String): SOCKSBean {
     val url = ("http://" + link.substringAfter("://")).toHttpUrlOrNull()
-        ?: error("Not supported: $link")
+        ?: error("Not supported link")
 
     return SOCKSBean().apply {
         protocol = when {

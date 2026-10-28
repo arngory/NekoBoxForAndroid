@@ -58,6 +58,11 @@ class SagerNet : Application(),
 
         if (isMainProcess || isBgProcess) {
             DataStore.migrateLegacySettings()
+            if (isMainProcess) {
+                // create the per-install tokens before the :bg process can race for them
+                DataStore.clashApiSecret
+                DataStore.shortcutToken
+            }
             externalAssets.mkdirs()
             Seq.setContext(this)
             Libcore.initCore(

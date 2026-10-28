@@ -17,9 +17,6 @@ import androidx.activity.result.component2
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.pm.ShortcutInfoCompat
-import androidx.core.content.pm.ShortcutManagerCompat
-import androidx.core.graphics.drawable.IconCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.preference.EditTextPreference
@@ -398,15 +395,10 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
             R.id.action_create_shortcut -> {
                 val activity = requireActivity() as ProfileSettingsActivity<*>
                 val ent = activity.proxyEntity!!
-                val shortcut = ShortcutInfoCompat.Builder(activity, "shortcut-profile-${ent.id}")
-                    .setShortLabel(ent.displayName())
-                    .setLongLabel(ent.displayName())
-                    .setIcon(
-                        IconCompat.createWithResource(
-                            activity, R.drawable.ic_qu_shadowsocks_launcher
-                        )
-                    ).setIntent(QuickToggleShortcut.shortcutIntent(activity, ent.id)).build()
-                ShortcutManagerCompat.requestPinShortcut(activity, shortcut, null)
+                if (!QuickToggleShortcut.pinProfileShortcut(activity, ent.id, ent.displayName())) {
+                    Logs.w("no default launcher to pin the shortcut to")
+                }
+                true
             }
 
             R.id.action_move -> {

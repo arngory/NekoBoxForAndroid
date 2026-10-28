@@ -188,9 +188,17 @@ object DataStore : OnPreferenceDataStoreChangeListener {
 
     // every app on the device can reach 127.0.0.1, so the Clash API and exported shortcuts need a token
     private var clashApiSecretStored by configurationStore.string("clashApiSecret")
-    val clashApiSecret get() = clashApiSecretStored.ifBlank { randomToken().also { clashApiSecretStored = it } }
+    val clashApiSecret: String
+        get() = clashApiSecretStored.ifBlank {
+            clashApiSecretStored = randomToken()
+            clashApiSecretStored // another process may have written first: use what is stored
+        }
     private var shortcutTokenStored by configurationStore.string("shortcutToken")
-    val shortcutToken get() = shortcutTokenStored.ifBlank { randomToken().also { shortcutTokenStored = it } }
+    val shortcutToken: String
+        get() = shortcutTokenStored.ifBlank {
+            shortcutTokenStored = randomToken()
+            shortcutTokenStored
+        }
 
     private fun randomToken() = ByteArray(16).also { SecureRandom().nextBytes(it) }
         .joinToString("") { "%02x".format(it) }

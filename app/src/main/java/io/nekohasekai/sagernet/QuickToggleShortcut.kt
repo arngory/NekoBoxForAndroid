@@ -23,6 +23,7 @@ package io.nekohasekai.sagernet
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ShortcutManager
 import android.os.Build
 import android.os.Bundle
@@ -57,11 +58,58 @@ class QuickToggleShortcut : Activity(), SagerConnection.Callback {
             if (profileId >= 0) intent.putExtra("profile", profileId)
             return intent
         }
+
+        /**
+         * The default launcher, the only app allowed to see a token-carrying shortcut before
+         * Android 8. Any app can declare a HOME activity, so it has to be the chosen one.
+         */
+        private fun defaultLauncher(context: Context): String? {
+            val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            return context.packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)
+                ?.activityInfo?.packageName?.takeIf { it != "android" } // "android": no default chosen
+        }
+
+        /** Pins a shortcut that toggles [profileId]; false when there is no launcher to send it to. */
+        @Suppress("DEPRECATION")
+        fun pinProfileShortcut(context: Context, profileId: Long, label: String): Boolean {
+            if (Build.VERSION.SDK_INT >= 26) {
+                return ShortcutManagerCompat.requestPinShortcut(
+                    context, ShortcutInfoCompat.Builder(context, "shortcut-profile-$profileId")
+                        .setShortLabel(label)
+                        .setLongLabel(label)
+                        .setIcon(IconCompat.createWithResource(context, R.drawable.ic_qu_shadowsocks_launcher))
+                        .setIntent(shortcutIntent(context, profileId))
+                        .build(), null
+                )
+            }
+            // ShortcutManagerCompat would send the token in an implicit broadcast any app can receive
+            val launcher = defaultLauncher(context) ?: return false
+            context.sendBroadcast(
+                Intent("com.android.launcher.action.INSTALL_SHORTCUT")
+                    .setPackage(launcher)
+                    .putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent(context, profileId))
+                    .putExtra(Intent.EXTRA_SHORTCUT_NAME, label)
+                    .putExtra(
+                        Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+                        Intent.ShortcutIconResource.fromContext(context, R.drawable.ic_qu_shadowsocks_launcher)
+                    )
+            )
+            return true
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (intent.action == Intent.ACTION_CREATE_SHORTCUT) {
+            // before Android 8 the result carries the token, so it goes to the default launcher only
+            if (Build.VERSION.SDK_INT < 26 && callingActivity?.packageName.let {
+                    it == null || it != defaultLauncher(this)
+                }
+            ) {
+                setResult(RESULT_CANCELED)
+                finish()
+                return
+            }
             setResult(RESULT_OK, ShortcutManagerCompat.createShortcutResultIntent(this,
                 ShortcutInfoCompat.Builder(this, "toggle")
                     .setIntent(shortcutIntent(this))
