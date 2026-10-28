@@ -247,7 +247,10 @@ class BaseService {
             data.changeState(State.Stopping)
 
             runOnMainDispatcher {
-                data.connectingJob?.cancelAndJoin() // ensure stop connecting first
+                // Stop connecting first. The core start runs on an IO thread and only returns once
+                // close() (in killProcesses) cancels it, so join after closing, not before.
+                val connecting = data.connectingJob
+                connecting?.cancel()
                 // we use a coroutineScope here to allow clean-up in parallel
                 coroutineScope {
                     killProcesses()
@@ -258,6 +261,7 @@ class BaseService {
                     }
                     data.proxy = null
                 }
+                connecting?.join()
 
                 // change the state
                 data.changeState(State.Stopped, msg)
@@ -359,7 +363,11 @@ class BaseService {
             }
 
             data.changeState(State.Connecting)
-            runOnMainDispatcher {
+            // a stop requested meanwhile ends the connect quietly: stopRunner reports the state
+            fun failed(msg: String?) {
+                if (data.state == State.Connecting) stopRunner(false, msg)
+            }
+            data.connectingJob = runOnMainDispatcher {
                 try {
                     data.notification = createNotification(ServiceNotification.genTitle(profile))
 
@@ -374,17 +382,18 @@ class BaseService {
                     }
 
                     startProcesses()
+                    if (data.state != State.Connecting) return@runOnMainDispatcher
                     data.changeState(State.Connected)
 
                     lateInit()
                 } catch (_: CancellationException) { // if the job was cancelled, it is canceller's responsibility to call stopRunner
                 } catch (_: UnknownHostException) {
-                    stopRunner(false, getString(R.string.invalid_server))
+                    failed(getString(R.string.invalid_server))
                 } catch (e: PluginManager.PluginNotFoundException) {
                     Toast.makeText(this@Interface, e.readableMessage, Toast.LENGTH_SHORT).show()
                     Logs.w(e)
                     data.binder.missingPlugin(e.plugin)
-                    stopRunner(false, null)
+                    failed(null)
                 } catch (exc: Throwable) {
                     if (exc.javaClass.name.endsWith("proxyerror")) {
                         // error from golang
@@ -392,9 +401,7 @@ class BaseService {
                     } else {
                         Logs.w(exc)
                     }
-                    stopRunner(
-                        false, "${getString(R.string.service_failed)}: ${exc.readableMessage}"
-                    )
+                    failed("${getString(R.string.service_failed)}: ${exc.readableMessage}")
                 } finally {
                     data.connectingJob = null
                 }
