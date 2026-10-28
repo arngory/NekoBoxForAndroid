@@ -147,6 +147,7 @@
 <string name="wireguard_persistent_keepalive">Persistent keepalive, секунд (0 — выкл., 25 для мобильных сетей)</string>
 <string name="dns_optimistic_cache">Оптимистичный DNS-кеш</string>
 <string name="dns_optimistic_cache_sum">Сразу отвечать из истёкшей записи кеша и обновлять её в фоне: быстрее на медленной мобильной сети, но один запрос может получить устаревший адрес</string>
+<string name="hop_interval_max">Макс. интервал смены порта, секунд (0 — фиксированный)</string>
 <string name="group_auto_select">Авто (наименьшая задержка)</string>
 <string name="group_auto_select_sum">Запуск любого профиля группы подключает через профиль с наименьшей задержкой, проверка каждые 3 минуты</string>
 <string name="subscription_send_hwid">Отправлять ID устройства (HWID)</string>

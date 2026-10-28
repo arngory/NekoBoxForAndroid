@@ -534,6 +534,7 @@
     <string name="wireguard_persistent_keepalive">Persistent keepalive, seconds (0 = off, 25 for mobile networks)</string>
     <string name="dns_optimistic_cache">Optimistic DNS cache</string>
     <string name="dns_optimistic_cache_sum">Answer from an expired cache entry right away and refresh it in the background: faster on slow mobile networks, an address may be stale for one request</string>
+    <string name="hop_interval_max">Max port hopping interval, seconds (0 = fixed interval)</string>
     <string name="group_auto_select">Auto (lowest latency)</string>
     <string name="group_auto_select_sum">Starting any profile of this group connects through the one with the lowest latency, re-tested every 3 minutes</string>
     <string name="subscription_send_hwid">Send device ID (HWID)</string>

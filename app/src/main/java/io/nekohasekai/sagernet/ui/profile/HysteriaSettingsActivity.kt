@@ -35,6 +35,7 @@ class HysteriaSettingsActivity : ProfileSettingsActivity<HysteriaBean>() {
         DataStore.serverConnectionReceiveWindow = connectionReceiveWindow
         DataStore.serverDisableMtuDiscovery = disableMtuDiscovery
         DataStore.serverHopInterval = hopInterval
+        DataStore.serverHopIntervalMax = hopIntervalMax
     }
 
     override fun HysteriaBean.serialize() {
@@ -56,6 +57,7 @@ class HysteriaSettingsActivity : ProfileSettingsActivity<HysteriaBean>() {
         connectionReceiveWindow = DataStore.serverConnectionReceiveWindow
         disableMtuDiscovery = DataStore.serverDisableMtuDiscovery
         hopInterval = DataStore.serverHopInterval
+        hopIntervalMax = DataStore.serverHopIntervalMax
     }
 
     override fun PreferenceFragmentCompat.createPreferences(

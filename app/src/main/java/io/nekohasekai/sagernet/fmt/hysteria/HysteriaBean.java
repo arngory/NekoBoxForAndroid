@@ -31,6 +31,8 @@ public class HysteriaBean extends AbstractBean {
     public Integer connectionReceiveWindow;
     public Boolean disableMtuDiscovery;
     public Integer hopInterval;
+    // version 8, Hysteria2: the hop interval is random between hopInterval and this, 0 = fixed
+    public Integer hopIntervalMax;
 
     // HY1
 
@@ -77,12 +79,13 @@ public class HysteriaBean extends AbstractBean {
         if (connectionReceiveWindow == null) connectionReceiveWindow = 0;
         if (disableMtuDiscovery == null) disableMtuDiscovery = false;
         if (hopInterval == null) hopInterval = 10;
+        if (hopIntervalMax == null) hopIntervalMax = 0;
         if (serverPorts == null) serverPorts = "443";
     }
 
     @Override
     public void serialize(ByteBufferOutput output) {
-        output.writeInt(7);
+        output.writeInt(8);
         super.serialize(output);
 
         output.writeInt(protocolVersion);
@@ -104,6 +107,7 @@ public class HysteriaBean extends AbstractBean {
         output.writeBoolean(disableMtuDiscovery);
         output.writeInt(hopInterval);
         output.writeString(serverPorts);
+        output.writeInt(hopIntervalMax != null ? hopIntervalMax : 0);
     }
 
     @Override
@@ -147,6 +151,9 @@ public class HysteriaBean extends AbstractBean {
             } else {
                 serverPorts = serverPort.toString();
             }
+        }
+        if (version >= 8) {
+            hopIntervalMax = input.readInt();
         }
     }
 

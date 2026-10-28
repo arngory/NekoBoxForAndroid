@@ -337,6 +337,8 @@ fun buildSingBoxOutboundHysteriaBean(bean: HysteriaBean): SingBoxOptions.SingBox
                 server_ports = hopPortsToSingboxList(bean.serverPorts)
             }
             hop_interval = "${bean.hopInterval}s"
+            // a random interval each hop makes the hopping pattern less regular
+            if (bean.hopIntervalMax > bean.hopInterval) hop_interval_max = "${bean.hopIntervalMax}s"
             up_mbps = bean.uploadMbps
             down_mbps = bean.downloadMbps
             if (bean.obfuscation.isNotBlank()) {
