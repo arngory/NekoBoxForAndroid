@@ -38,6 +38,7 @@ import io.nekohasekai.sagernet.databinding.LayoutMainBinding
 import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.fmt.KryoConverters
 import io.nekohasekai.sagernet.fmt.PluginEntry
+import io.nekohasekai.sagernet.group.parseSubscriptionDeepLink
 import io.nekohasekai.sagernet.fmt.overridesFullConfig
 import io.nekohasekai.sagernet.group.GroupInterfaceAdapter
 import io.nekohasekai.sagernet.group.GroupUpdater
@@ -139,7 +140,9 @@ class MainActivity : ThemedActivity(),
         val uri = intent.data ?: return
 
         runOnDefaultDispatcher {
-            if (uri.scheme == "sn" && uri.host == "subscription" || uri.scheme == "clash") {
+            if (uri.scheme == "sn" && uri.host == "subscription" || uri.scheme == "clash" ||
+                parseSubscriptionDeepLink(uri.toString()) != null
+            ) {
                 importSubscription(uri)
             } else {
                 importProfile(uri)
@@ -157,15 +160,15 @@ class MainActivity : ThemedActivity(),
     suspend fun importSubscription(uri: Uri) {
         val group: ProxyGroup
 
-        val url = uri.getQueryParameter("url")
-        if (!url.isNullOrBlank()) {
+        val cleartext = parseSubscriptionDeepLink(uri.toString())
+        if (cleartext != null) {
             group = ProxyGroup(type = GroupType.SUBSCRIPTION)
             val subscription = SubscriptionBean()
             group.subscription = subscription
 
-            // cleartext format
-            subscription.link = url
-            group.name = uri.getQueryParameter("name")
+            // cleartext format, also of other clients' "add subscription" links
+            subscription.link = cleartext.url
+            group.name = cleartext.name
         } else {
             val data = uri.encodedQuery.takeIf { !it.isNullOrBlank() } ?: return
             try {

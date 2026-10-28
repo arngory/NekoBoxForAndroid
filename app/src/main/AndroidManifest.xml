@@ -124,6 +124,23 @@
                     android:scheme="clash" />
             </intent-filter>
 
+            <!-- "add subscription" links of other clients -->
+            <intent-filter android:label="@string/subscription_import">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="clashmeta" />
+                <data android:scheme="sing-box" />
+                <data android:scheme="hiddify" />
+                <data android:scheme="v2rayng" />
+                <data android:host="install-config" />
+                <data android:host="import-remote-profile" />
+                <data android:host="import" />
+                <data android:host="install-sub" />
+            </intent-filter>
+
             <intent-filter android:label="@string/profile_import">
                 <action android:name="android.intent.action.VIEW" />
 
