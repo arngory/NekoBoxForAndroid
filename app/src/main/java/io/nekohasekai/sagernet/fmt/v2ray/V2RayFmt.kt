@@ -243,7 +243,7 @@ fun StandardV2RayBean.parseDuckSoft(url: HttpUrl) {
             url.queryParameter("path")?.let {
                 path = it
             }
-            url.queryParameter("mode")?.takeIf { it.isNotBlank() }?.let {
+            url.queryParameter("mode")?.takeIf { it in XHTTP_MODES }?.let {
                 xhttpMode = it
             }
             url.queryParameter("extra")?.takeIf { it.isNotBlank() }?.let {
@@ -394,7 +394,8 @@ fun parseV2RayN(link: String): VMessBean {
         // v2rayN keeps the XHTTP mode in "type"
         "xhttp", "splithttp" -> {
             bean.type = "xhttp"
-            if (!headerType.isNullOrBlank()) bean.xhttpMode = headerType
+            // many panels write "none" there for any net
+            if (headerType in XHTTP_MODES) bean.xhttpMode = headerType
         }
     }
     when (vmessQRCode.tls) {

@@ -4,6 +4,9 @@ import io.nekohasekai.sagernet.ktx.Logs
 import org.json.JSONArray
 import org.json.JSONObject
 
+/** Modes the core's XHTTP client takes; anything else fails the config. */
+val XHTTP_MODES = setOf("auto", "packet-up", "stream-up", "stream-one")
+
 /** Transport options of the core's XHTTP client (sing-box-lx option/v2ray_xhttp.go). */
 private val XHTTP_OPTION_KEYS = setOf(
     "headers", "x_padding_bytes", "xmux", "no_grpc_header", "session_placement", "session_key",
@@ -104,6 +107,6 @@ fun buildXhttpOptions(bean: StandardV2RayBean): Map<String, Any> {
         putAll(extra)
         if (!bean.host.isNullOrBlank()) put("host", bean.host)
         put("path", bean.path?.takeIf { it.isNotBlank() } ?: "/")
-        bean.xhttpMode?.takeIf { it.isNotBlank() }?.let { put("mode", it) }
+        bean.xhttpMode?.takeIf { it in XHTTP_MODES }?.let { put("mode", it) }
     }
 }

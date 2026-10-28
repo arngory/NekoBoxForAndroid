@@ -61,5 +61,9 @@ class XhttpTest {
         val old = VMessBean().apply { alterId = -1 }
         old.parseDuckSoft("https://uuid@example.com:443?type=splithttp&path=%2Fs".toHttpUrl())
         assertEquals("xhttp", old.type)
+
+        val unknownMode = VMessBean().apply { alterId = -1; initializeDefaultValues() }
+        unknownMode.parseDuckSoft("https://uuid@example.com:443?type=xhttp&mode=none".toHttpUrl())
+        assertEquals("auto", unknownMode.xhttpMode)
     }
 }
