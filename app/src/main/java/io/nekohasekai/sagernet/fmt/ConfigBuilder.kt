@@ -152,7 +152,9 @@ fun buildConfig(
         if (forTest) mapOf() else SagerDatabase.proxyDao.getEntities(extraRules.mapNotNull { rule ->
             rule.outbound.takeIf { it > 0 && it != proxy.id }
         }.toHashSet().toList()).associateBy { it.id }
-    val buildSelector = !forTest && group?.isSelector == true && !forExport
+    // auto select (urltest) takes precedence over the manual selector
+    val buildAuto = !forTest && group?.autoSelect == true && !forExport
+    val buildSelector = !forTest && group?.isSelector == true && !forExport && !buildAuto
     val userDNSRuleList = mutableListOf<DNSRule_DefaultOptions>()
     val domainListDNSDirectForce = mutableListOf<String>()
     val bypassDNSBeans = hashSetOf<AbstractBean>()
@@ -545,6 +547,19 @@ fun buildConfig(
                 tag = TAG_PROXY
                 default_ = tagMap[proxy.id]
                 outbounds = tagMap.values.toList()
+            })
+            route.final_ = TAG_PROXY
+        } else if (buildAuto) {
+            SagerDatabase.proxyDao.getByGroup(group!!.id).forEach {
+                tagMap[it.id] = buildChain(it.id, it)
+            }
+            outbounds.add(0, Outbound_URLTestOptions().apply {
+                type = "urltest"
+                tag = TAG_PROXY
+                outbounds = tagMap.values.toList()
+                url = DataStore.connectionTestURL
+                interval = "3m"
+                tolerance = 50
             })
             route.final_ = TAG_PROXY
         } else {

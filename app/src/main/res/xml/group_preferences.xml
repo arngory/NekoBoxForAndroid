@@ -29,6 +29,12 @@
         app:key="groupIsSelector"
         app:title="@string/use_selector" />
 
+    <SwitchPreference
+        app:icon="@drawable/ic_baseline_flip_camera_android_24"
+        app:key="groupAutoSelect"
+        app:summary="@string/group_auto_select_sum"
+        app:title="@string/group_auto_select" />
+
     <io.nekohasekai.sagernet.widget.OutboundPreference
         app:icon="@drawable/ic_hardware_router"
         app:key="groupFrontProxy"

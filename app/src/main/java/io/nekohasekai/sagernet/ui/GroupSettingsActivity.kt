@@ -46,6 +46,7 @@ class GroupSettingsActivity(
         DataStore.groupType = type
         DataStore.groupOrder = order
         DataStore.groupIsSelector = isSelector
+        DataStore.groupAutoSelect = autoSelect
 
         DataStore.frontProxy = frontProxy
         DataStore.landingProxy = landingProxy
@@ -68,6 +69,7 @@ class GroupSettingsActivity(
         type = DataStore.groupType
         order = DataStore.groupOrder
         isSelector = DataStore.groupIsSelector
+        autoSelect = DataStore.groupAutoSelect
 
         frontProxy = if (DataStore.frontProxyTmp == 3) DataStore.frontProxy else -1
         landingProxy = if (DataStore.landingProxyTmp == 3) DataStore.landingProxy else -1

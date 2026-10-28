@@ -21,7 +21,9 @@ data class ProxyGroup(
     var order: Int = GroupOrder.ORIGIN,
     var isSelector: Boolean = false,
     var frontProxy: Long = -1L,
-    var landingProxy: Long = -1L
+    var landingProxy: Long = -1L,
+    /** Use the profile with the lowest latency (sing-box urltest) instead of the selected one. */
+    @ColumnInfo(defaultValue = "0") var autoSelect: Boolean = false,
 ) : Serializable() {
 
     @Transient

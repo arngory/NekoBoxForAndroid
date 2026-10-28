@@ -531,6 +531,8 @@
     <string name="log_level">Log Level</string>
     <string name="enable_clash_api_summary">Provide clash api and yacd dashboard at 127.0.0.1:9090. The API is protected by a random secret, copy it from the dashboard menu for other clients</string>
     <string name="copy_clash_api_secret">Copy API secret</string>
+    <string name="group_auto_select">Auto (lowest latency)</string>
+    <string name="group_auto_select_sum">Starting any profile of this group connects through the one with the lowest latency, re-tested every 3 minutes</string>
     <string name="subscription_send_hwid">Send device ID (HWID)</string>
     <string name="subscription_send_hwid_sum">For panels that limit devices (Remnawave, Marzban): sends a random ID of this installation, the Android version and the device model</string>
     <string name="route_domain_help">One per line: example.com (with subdomains), full:, keyword:, regexp:, geosite:ru, or a remote rule-set with domains: rule-set:https://…/geosite-ru.srs</string>
