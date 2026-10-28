@@ -96,3 +96,5 @@ require (
 replace github.com/matsuridayo/libneko => ../../libneko
 
 replace github.com/sagernet/sing-box => ../../sing-box
+
+replace github.com/sagernet/sing-quic => ../../sing-box/third_party/sing-quic
