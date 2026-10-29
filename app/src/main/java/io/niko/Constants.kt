@@ -3,7 +3,7 @@ package io.niko
 const val CONNECTION_TEST_URL = "http://cp.cloudflare.com/"
 
 // where the app looks for its own updates; GitHub redirects the API after a repository rename
-const val RELEASE_REPO = "arngory/NekoBoxForAndroid"
+const val RELEASE_REPO = "arngory/niko"
 
 object Key {
 
