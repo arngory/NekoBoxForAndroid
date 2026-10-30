@@ -299,6 +299,8 @@ fun buildConfig(
         // a hop behind a DNS tunnel may carry no UDP at all (SOCKS, HTTP, SSH, Shadowsocks
         // without UoT): remote DNS through the proxy then goes over TCP
         var tunnelledHop = false
+        // the chains behind TAG_PROXY, which remote DNS uses, as opposed to route-rule outbounds
+        var buildingProxy = false
         if (yggdrasil && !forTest) {
             addYggdrasilEndpoint(DataStore.yggdrasilPrivateKey)
             yggdrasilInboundRule = Rule_DefaultOptions().apply {
@@ -552,11 +554,14 @@ fun buildConfig(
                     if (knockTag != null) throw Exception("$prefix: not together with port knocking")
                     if (proxyEntity.needExternal()) throw Exception("$prefix: not supported for plugin profiles")
                     // the tunnels carry TCP only
-                    if (bean is HysteriaBean || bean is TuicBean || bean is WireGuardBean) {
-                        throw Exception("$prefix: the tunnel carries TCP, this profile type needs UDP")
+                    if (bean is HysteriaBean || bean is TuicBean || bean is WireGuardBean ||
+                        bean is StandardV2RayBean && bean.type == "quic"
+                    ) {
+                        throw Exception("$prefix: the tunnel carries TCP, this profile needs UDP")
                     }
+                    if (bean is ConfigBean) throw Exception("$prefix: not supported for custom configs")
                     if (index != profileList.lastIndex) throw Exception("$prefix: only on the first hop of a chain")
-                    tunnelledHop = true
+                    if (buildingProxy) tunnelledHop = true
                     val tunnelTag = "$tagOut-dnstunnel"
                     // libcore's protect server runs with the main instance; a latency test without
                     // one must not point the tunnel's own sockets at a missing socket
@@ -637,6 +642,7 @@ fun buildConfig(
         }
 
         // build outbounds
+        buildingProxy = true
         if (buildSelector) {
             val list = group.id.let { SagerDatabase.proxyDao.getByGroup(it) }
             list.forEach {
@@ -665,6 +671,7 @@ fun buildConfig(
         } else {
             route.final_ = buildChain(0, proxy)
         }
+        buildingProxy = false
         // build outbounds from route item
         extraProxies.forEach { (key, p) ->
             tagMap[key] = buildChain(key, p)
@@ -870,11 +877,18 @@ fun buildConfig(
             "dns-remote", TAG_PROXY, "dns-direct"
         ).apply {
             // the same resolver over a TCP transport: UDP, DoQ and DoH3 cannot pass a DNS tunnel
-            if (tunnelledHop) type = when (type) {
-                "udp" -> "tcp"
-                "quic" -> "tls"
-                "h3" -> "https"
-                else -> type
+            if (tunnelledHop) when (type) {
+                "udp" -> type = "tcp"
+                // a DoQ or DoH3 port is not the DoT or DoH port: back to the default
+                "quic" -> {
+                    type = "tls"
+                    server_port = null
+                }
+
+                "h3" -> {
+                    type = "https"
+                    server_port = null
+                }
             }
         })
 
