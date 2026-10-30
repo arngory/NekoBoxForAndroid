@@ -393,6 +393,13 @@ object RawUpdater : GroupUpdater() {
                                         }
                                     }
 
+                                    // mihomo's VLESS post-quantum encryption, "none" = off
+                                    "encryption" -> if (bean is VMessBean && bean.isVLESS) {
+                                        (opt.value as? String)?.trim()
+                                            ?.takeIf { it.isNotEmpty() && it != "none" }
+                                            ?.let { bean.vlessEncryption = it }
+                                    }
+
                                     "packet-encoding" -> if (bean is VMessBean) {
                                         bean.packetEncoding = when ((opt.value as? String)) {
                                             "packetaddr" -> 1

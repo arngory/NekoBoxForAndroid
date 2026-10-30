@@ -272,6 +272,13 @@ fun StandardV2RayBean.parseDuckSoft(url: HttpUrl) {
         }
     }
 
+    // VLESS post-quantum encryption: Xray links carry its spec in "encryption", "none" = off
+    if (isVLESS) {
+        url.queryParameter("encryption")?.trim()?.takeIf { it.isNotEmpty() && it != "none" }?.let {
+            vlessEncryption = it
+        }
+    }
+
     url.queryParameter("fp")?.let {
         utlsFingerprint = it
     }
@@ -500,7 +507,7 @@ fun StandardV2RayBean.toUriVMessVLESSTrojan(isTrojan: Boolean): String {
         .addQueryParameter("type", type)
 
     if (isVLESS) {
-        builder.addQueryParameter("encryption", "none")
+        builder.addQueryParameter("encryption", vlessEncryption?.takeIf { it.isNotBlank() } ?: "none")
         if (encryption != "auto") builder.addQueryParameter("flow", encryption)
     }
 
@@ -722,6 +729,7 @@ fun buildSingBoxOutboundStandardV2RayBean(bean: StandardV2RayBean): Outbound {
                 if (bean.encryption.isNotBlank() && bean.encryption != "auto") {
                     flow = bean.encryption
                 }
+                if (!bean.vlessEncryption.isNullOrBlank()) encryption = bean.vlessEncryption
                 when (bean.packetEncoding) {
                     0 -> packet_encoding = ""
                     1 -> packet_encoding = "packetaddr"

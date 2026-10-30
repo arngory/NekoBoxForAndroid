@@ -41,6 +41,8 @@ public abstract class StandardV2RayBean extends AbstractBean {
     public String realityShortId;
     // version 6: "" = as the fingerprint carries it, "hybrid", "classical"
     public String realityKeyShare;
+    // version 7: VLESS post-quantum encryption spec ("mlkem768x25519plus..."), "" = none
+    public String vlessEncryption;
 
 
     // --------------------------------------- //
@@ -107,6 +109,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
         if (realityPubKey == null) realityPubKey = "";
         if (realityShortId == null) realityShortId = "";
         if (realityKeyShare == null) realityKeyShare = "";
+        if (vlessEncryption == null) vlessEncryption = "";
 
         if (enableECH == null) enableECH = false;
         if (JavaUtil.isNullOrBlank(echConfig)) echConfig = "";
@@ -122,7 +125,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
 
     @Override
     public void serialize(ByteBufferOutput output) {
-        output.writeInt(6);
+        output.writeInt(7);
         super.serialize(output);
         output.writeString(uuid);
         output.writeString(encryption);
@@ -184,6 +187,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
         output.writeInt(muxConcurrency);
 
         output.writeString(realityKeyShare == null ? "" : realityKeyShare);
+        output.writeString(vlessEncryption == null ? "" : vlessEncryption);
     }
 
     @Override
@@ -287,6 +291,9 @@ public abstract class StandardV2RayBean extends AbstractBean {
         }
         if (version >= 6) {
             realityKeyShare = input.readString();
+        }
+        if (version >= 7) {
+            vlessEncryption = input.readString();
         }
     }
 

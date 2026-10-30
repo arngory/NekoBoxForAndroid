@@ -45,6 +45,12 @@
             app:key="encryption"
             app:title="@string/encryption"
             app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:dialogMessage="@string/vless_encryption_help"
+            app:icon="@drawable/ic_notification_enhanced_encryption"
+            app:key="vlessEncryption"
+            app:title="@string/vless_encryption"
+            app:useSimpleSummaryProvider="true" />
         <io.niko.ui.SimpleMenuPreference
             app:entries="@array/packet_encoding_entry"
             app:entryValues="@array/int_array_3"

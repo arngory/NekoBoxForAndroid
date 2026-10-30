@@ -148,6 +148,8 @@
 <string name="dns_optimistic_cache">Оптимистичный DNS-кеш</string>
 <string name="dns_optimistic_cache_sum">Сразу отвечать из истёкшей записи кеша и обновлять её в фоне: быстрее на медленной мобильной сети, но один запрос может получить устаревший адрес</string>
 <string name="hop_interval_max">Макс. интервал смены порта, секунд (0 — фиксированный)</string>
+<string name="vless_encryption">Шифрование VLESS</string>
+<string name="vless_encryption_help">Постквантовый слой новых серверов Xray: клиентская строка из «xray vlessenc», mlkem768x25519plus.… Пусто — без него.</string>
 <string name="amneziawg_params">Параметры AmneziaWG</string>
 <string name="amneziawg_help">Строки секции [Interface] из .conf AmneziaWG: Jc, Jmin, Jmax, S1–S4, H1–H4, I1–I5 и ключи AWG 3, по одной «Ключ = значение» на строку. Пусто — обычный WireGuard. Если задан S4, ставьте MTU 1280 или меньше.</string>
 <string name="reality_key_share">Обмен ключами REALITY</string>

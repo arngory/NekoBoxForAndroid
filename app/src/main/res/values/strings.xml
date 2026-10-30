@@ -535,6 +535,8 @@
     <string name="dns_optimistic_cache">Optimistic DNS cache</string>
     <string name="dns_optimistic_cache_sum">Answer from an expired cache entry right away and refresh it in the background: faster on slow mobile networks, an address may be stale for one request</string>
     <string name="hop_interval_max">Max port hopping interval, seconds (0 = fixed interval)</string>
+    <string name="vless_encryption">VLESS encryption</string>
+    <string name="vless_encryption_help">Post-quantum layer of current Xray servers: the client string from \"xray vlessenc\", mlkem768x25519plus.… Empty for none.</string>
     <string name="amneziawg_params">AmneziaWG parameters</string>
     <string name="amneziawg_help">Lines of an AmneziaWG .conf [Interface]: Jc, Jmin, Jmax, S1–S4, H1–H4, I1–I5 and the AWG 3 keys, one \"Key = value\" per line. Empty is plain WireGuard. With S4 set, use MTU 1280 or lower.</string>
     <string name="reality_key_share">REALITY key exchange</string>
