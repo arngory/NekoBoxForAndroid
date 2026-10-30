@@ -289,6 +289,8 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var serverDnsTunnelResolver by profileCacheStore.string(Key.SERVER_DNS_TUNNEL_RESOLVER)
     var serverDnsTunnelDomain by profileCacheStore.string(Key.SERVER_DNS_TUNNEL_DOMAIN)
     var serverDnsTunnelKey by profileCacheStore.string(Key.SERVER_DNS_TUNNEL_KEY)
+    var serverDnsTunnelMethod by profileCacheStore.stringToInt(Key.SERVER_DNS_TUNNEL_METHOD) { 2 }
+    var serverDnsTunnelFixedUpstream by profileCacheStore.boolean(Key.SERVER_DNS_TUNNEL_FIXED_UPSTREAM)
 
     var groupName by profileCacheStore.string(Key.GROUP_NAME)
     var groupType by profileCacheStore.stringToInt(Key.GROUP_TYPE)

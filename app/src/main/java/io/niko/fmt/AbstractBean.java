@@ -33,12 +33,13 @@ public abstract class AbstractBean extends Serializable {
     public Integer tlsFragment;
     // version 4: SHA-256 of the server's public key, base64, one per line
     public String certPins;
-    // version 5: DNS tunnel the profile dials through, "" off or "dnstt"; the tunnel
-    // server forwards to its fixed upstream, which is this profile's server
+    // version 5: DNS tunnel the profile dials through, "" off, "dnstt" or "masterdnsvpn"
     public String dnsTunnel;
-    public String dnsTunnelResolver; // https://host/dns-query, tls://host, udp://host
-    public String dnsTunnelDomain;
-    public String dnsTunnelKey; // the tunnel server's public key
+    public String dnsTunnelResolver; // dnstt: https://host/dns-query, tls://host, udp://host; masterdnsvpn: IPs, one per line
+    public String dnsTunnelDomain; // masterdnsvpn may take several, comma separated
+    public String dnsTunnelKey; // dnstt: the server's public key; masterdnsvpn: the shared key
+    public Integer dnsTunnelMethod; // masterdnsvpn DATA_ENCRYPTION_METHOD, 0-5
+    public Boolean dnsTunnelFixedUpstream; // masterdnsvpn server in TCP mode instead of SOCKS5
 
     //
     public transient String finalAddress;
@@ -99,6 +100,8 @@ public abstract class AbstractBean extends Serializable {
         if (dnsTunnelResolver == null) dnsTunnelResolver = "";
         if (dnsTunnelDomain == null) dnsTunnelDomain = "";
         if (dnsTunnelKey == null) dnsTunnelKey = "";
+        if (dnsTunnelMethod == null) dnsTunnelMethod = 2;
+        if (dnsTunnelFixedUpstream == null) dnsTunnelFixedUpstream = false;
     }
 
 
@@ -124,6 +127,8 @@ public abstract class AbstractBean extends Serializable {
         output.writeString(dnsTunnelResolver != null ? dnsTunnelResolver : "");
         output.writeString(dnsTunnelDomain != null ? dnsTunnelDomain : "");
         output.writeString(dnsTunnelKey != null ? dnsTunnelKey : "");
+        output.writeInt(dnsTunnelMethod != null ? dnsTunnelMethod : 2);
+        output.writeBoolean(dnsTunnelFixedUpstream != null && dnsTunnelFixedUpstream);
     }
 
     @Override
@@ -152,6 +157,8 @@ public abstract class AbstractBean extends Serializable {
             dnsTunnelResolver = input.readString();
             dnsTunnelDomain = input.readString();
             dnsTunnelKey = input.readString();
+            dnsTunnelMethod = input.readInt();
+            dnsTunnelFixedUpstream = input.readBoolean();
         }
     }
 

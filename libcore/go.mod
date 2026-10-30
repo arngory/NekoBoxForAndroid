@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/anytls/sing-anytls v0.0.11 // indirect
@@ -56,6 +57,7 @@ require (
 	github.com/mdlayher/socket v0.6.0 // indirect
 	github.com/metacubex/utls v1.8.7 // indirect
 	github.com/mholt/acmez/v3 v3.1.6 // indirect
+	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/sagernet/bbolt v0.0.0-20260915102804-500ee1e84832 // indirect
@@ -99,6 +101,7 @@ require (
 	google.golang.org/grpc v1.79.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
+	masterdnsvpn-go v0.0.0 // indirect
 	www.bamsoftware.com/git/dnstt.git v1.20260501.0 // indirect
 )
 
@@ -109,3 +112,5 @@ replace github.com/sagernet/sing-box => ../../sing-box
 replace github.com/sagernet/sing-quic => ../../sing-box/third_party/sing-quic
 
 replace github.com/sagernet/wireguard-go => ../../sing-box/third_party/wireguard-go
+
+replace masterdnsvpn-go => ../../sing-box/third_party/masterdnsvpn

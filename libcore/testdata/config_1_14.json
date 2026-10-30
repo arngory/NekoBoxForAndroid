@@ -185,6 +185,28 @@
    "server": "127.0.0.1",
    "server_port": 1080,
    "detour": "dnstt-test"
+  },
+  {
+   "type": "masterdnsvpn",
+   "tag": "mdv-test",
+   "domains": [
+    "v.example.com"
+   ],
+   "resolvers": [
+    "8.8.8.8",
+    "1.1.1.1:53"
+   ],
+   "encryption_method": 2,
+   "encryption_key": "secret",
+   "mode": "socks5"
+  },
+  {
+   "type": "vless",
+   "tag": "over-mdv",
+   "server": "example.com",
+   "server_port": 443,
+   "uuid": "bf000d23-0752-40b4-affe-68f7707a9661",
+   "detour": "mdv-test"
   }
  ],
  "endpoints": [

@@ -182,6 +182,8 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         DataStore.serverDnsTunnelResolver = dnsTunnelResolver
         DataStore.serverDnsTunnelDomain = dnsTunnelDomain
         DataStore.serverDnsTunnelKey = dnsTunnelKey
+        DataStore.serverDnsTunnelMethod = dnsTunnelMethod
+        DataStore.serverDnsTunnelFixedUpstream = dnsTunnelFixedUpstream
     }
 
     private fun AbstractBean.saveConnectionTweaks() {
@@ -195,6 +197,8 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         dnsTunnelResolver = DataStore.serverDnsTunnelResolver
         dnsTunnelDomain = DataStore.serverDnsTunnelDomain
         dnsTunnelKey = DataStore.serverDnsTunnelKey
+        dnsTunnelMethod = DataStore.serverDnsTunnelMethod
+        dnsTunnelFixedUpstream = DataStore.serverDnsTunnelFixedUpstream
     }
 
     fun showConnectionTweaksDialog() {
@@ -214,6 +218,17 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         binding.dnsTunnelResolver.setText(DataStore.serverDnsTunnelResolver)
         binding.dnsTunnelDomain.setText(DataStore.serverDnsTunnelDomain)
         binding.dnsTunnelKey.setText(DataStore.serverDnsTunnelKey)
+        binding.dnsTunnelMethod.setText(DataStore.serverDnsTunnelMethod.toString())
+        binding.dnsTunnelFixedUpstream.isChecked = DataStore.serverDnsTunnelFixedUpstream
+        // the MasterDnsVPN settings only show with that engine
+        fun showEngine(masterDnsVpn: Boolean) {
+            binding.dnsTunnelMethodLayout.isVisible = masterDnsVpn
+            binding.dnsTunnelFixedUpstream.isVisible = masterDnsVpn
+        }
+        val masterDnsVpn = DataStore.serverDnsTunnel == DnsTunnel.MASTERDNSVPN
+        binding.dnsTunnelEngine.check(if (masterDnsVpn) R.id.dns_tunnel_masterdnsvpn else R.id.dns_tunnel_dnstt)
+        showEngine(masterDnsVpn)
+        binding.dnsTunnelEngine.setOnCheckedChangeListener { _, id -> showEngine(id == R.id.dns_tunnel_masterdnsvpn) }
         val dialog = MaterialAlertDialogBuilder(this).setTitle(R.string.connection_tweaks)
             .setView(binding.root)
             .setPositiveButton(android.R.string.ok, null)
@@ -235,19 +250,28 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
                 return@setOnClickListener
             }
             val tunnel = DnsTunnel(
+                engine = if (binding.dnsTunnelEngine.checkedRadioButtonId == R.id.dns_tunnel_masterdnsvpn) {
+                    DnsTunnel.MASTERDNSVPN
+                } else {
+                    DnsTunnel.DNSTT
+                },
                 resolver = binding.dnsTunnelResolver.text.toString().trim(),
                 domain = binding.dnsTunnelDomain.text.toString().trim(),
                 key = binding.dnsTunnelKey.text.toString().trim(),
+                method = binding.dnsTunnelMethod.text.toString().toIntOrNull() ?: -1,
+                fixedUpstream = binding.dnsTunnelFixedUpstream.isChecked,
             )
             val tunnelError = tunnel.validate()
             if (tunnelError != null) {
                 binding.dnsTunnelDomain.error = tunnelError
                 return@setOnClickListener
             }
-            DataStore.serverDnsTunnel = if (tunnel.enabled) DnsTunnel.DNSTT else ""
+            DataStore.serverDnsTunnel = if (tunnel.enabled) tunnel.engine else ""
             DataStore.serverDnsTunnelResolver = tunnel.resolver
             DataStore.serverDnsTunnelDomain = tunnel.domain
             DataStore.serverDnsTunnelKey = tunnel.key
+            DataStore.serverDnsTunnelMethod = tunnel.method.coerceIn(0, 5)
+            DataStore.serverDnsTunnelFixedUpstream = tunnel.fixedUpstream
             DataStore.serverCertPins = pins.trim()
             DataStore.serverTlsFragment = when (binding.tlsFragment.checkedRadioButtonId) {
                 R.id.tls_fragment_record -> 1

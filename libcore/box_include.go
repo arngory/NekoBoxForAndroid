@@ -89,6 +89,7 @@ func nekoboxAndroidOutboundRegistry() *outbound.Registry {
 
 	knock.Register(registry)
 	registerDNSTT(registry)
+	registerMasterDNSVPN(registry)
 
 	return registry
 }

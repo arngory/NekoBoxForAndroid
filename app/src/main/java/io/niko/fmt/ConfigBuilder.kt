@@ -38,6 +38,7 @@ import io.niko.utils.JavaUtil.gson
 import io.niko.utils.Util
 import io.niko.utils.listByLineOrComma
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import java.io.File
 
 const val TAG_MIXED = "mixed-in"
 
@@ -493,7 +494,7 @@ fun buildConfig(
                 }
 
                 // DNS tunnel (experimental): the entry hop reaches its server through the core's
-                // dnstt outbound; the tunnel server forwards to that server, so its address is unused
+                // dnstt or masterdnsvpn outbound
                 val dnsTunnel = DnsTunnel.of(bean)
                 if (dnsTunnel.enabled) {
                     val prefix = "DNS tunnel (${bean.displayName()})"
@@ -501,12 +502,17 @@ fun buildConfig(
                     if (knockTag != null) throw Exception("$prefix: not together with port knocking")
                     if (proxyEntity.needExternal()) throw Exception("$prefix: not supported for plugin profiles")
                     if (index != profileList.lastIndex) throw Exception("$prefix: only on the first hop of a chain")
-                    val tunnelTag = "$tagOut-dnstt"
+                    val tunnelTag = "$tagOut-dnstunnel"
+                    // libcore's protect server runs with the main instance; a latency test without
+                    // one must not point the tunnel's own sockets at a missing socket
+                    val protectPath = "protect_path".takeIf {
+                        !forTest || File(SagerNet.application.noBackupFilesDir, it).exists()
+                    }
                     outbounds.add(Outbound().apply {
                         tag = tunnelTag
-                        _hack_config_map.putAll(dnsTunnel.outboundOptions())
+                        _hack_config_map.putAll(dnsTunnel.outboundOptions(protectPath))
                     })
-                    // the server name is never resolved: dnstt ignores where the hop dials
+                    // the tunnel server resolves or ignores the hop's server name
                     currentOutbound._hack_config_map.remove("domain_resolver")
                     currentOutbound._hack_config_map["detour"] = tunnelTag
                 }

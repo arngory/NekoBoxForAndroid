@@ -83,6 +83,26 @@
             android:layout_height="wrap_content"
             android:text="@string/dns_tunnel" />
 
+        <RadioGroup
+            android:id="@+id/dns_tunnel_engine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/dns_tunnel_dnstt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="dnstt" />
+
+            <RadioButton
+                android:id="@+id/dns_tunnel_masterdnsvpn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MasterDnsVPN" />
+        </RadioGroup>
+
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -93,7 +113,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="monospace"
-                android:inputType="textUri|textNoSuggestions" />
+                android:inputType="textMultiLine|textUri|textNoSuggestions" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -121,6 +141,25 @@
                 android:fontFamily="monospace"
                 android:inputType="text|textNoSuggestions" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/dns_tunnel_method_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/dns_tunnel_method">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/dns_tunnel_method"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/dns_tunnel_fixed_upstream"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/dns_tunnel_fixed_upstream" />
 
         <TextView
             style="?android:attr/textAppearanceSmall"
