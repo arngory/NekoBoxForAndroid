@@ -18,6 +18,7 @@ import io.niko.database.preference.EditTextPreferenceModifiers
 import io.niko.ktx.*
 import io.niko.utils.Theme
 import io.niko.ui.*
+import libcore.Libcore
 
 class SettingsPreferenceFragment : PreferenceFragmentCompat() {
 
@@ -180,6 +181,31 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         tunImplementation.onPreferenceChangeListener = reloadListener
         acquireWakeLock.onPreferenceChangeListener = reloadListener
         globalCustomConfig.onPreferenceChangeListener = reloadListener
+
+        // Yggdrasil: the node address follows from this install's key, made on first enable
+        val yggdrasilAddress = findPreference<Preference>(Key.YGGDRASIL_ADDRESS)!!
+        fun showYggdrasilAddress(enabled: Boolean) {
+            yggdrasilAddress.summary = if (enabled) {
+                Libcore.yggdrasilAddress(DataStore.yggdrasilPrivateKey).ifEmpty { getString(R.string.yggdrasil_not_built) }
+            } else {
+                ""
+            }
+        }
+        showYggdrasilAddress(DataStore.yggdrasilEnabled)
+        yggdrasilAddress.setOnPreferenceClickListener {
+            yggdrasilAddress.summary?.toString()?.takeIf { it.contains(':') }?.let {
+                SagerNet.trySetPrimaryClip(it)
+                snackbar(R.string.copy_success).show()
+            }
+            true
+        }
+        findPreference<SwitchPreference>(Key.YGGDRASIL_ENABLED)!!.setOnPreferenceChangeListener { _, newValue ->
+            showYggdrasilAddress(newValue as Boolean)
+            needReload()
+            true
+        }
+        findPreference<Preference>(Key.YGGDRASIL_PEERS)!!.onPreferenceChangeListener = reloadListener
+        findPreference<Preference>(Key.YGGDRASIL_ALLOW_INBOUND)!!.onPreferenceChangeListener = reloadListener
     }
 
     override fun onResume() {

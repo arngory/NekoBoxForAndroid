@@ -21,6 +21,7 @@ import io.niko.ktx.string
 import io.niko.ktx.stringToInt
 import io.niko.ktx.stringToIntIfExists
 import io.niko.TempDatabase
+import libcore.Libcore
 import java.security.SecureRandom
 
 object DataStore : OnPreferenceDataStoreChangeListener {
@@ -93,6 +94,13 @@ object DataStore : OnPreferenceDataStoreChangeListener {
 
     var appTLSVersion by configurationStore.string(Key.APP_TLS_VERSION)
     var enableClashAPI by configurationStore.boolean(Key.ENABLE_CLASH_API)
+    var yggdrasilEnabled by configurationStore.boolean(Key.YGGDRASIL_ENABLED)
+    var yggdrasilPeers by configurationStore.string(Key.YGGDRASIL_PEERS)
+    var yggdrasilAllowInbound by configurationStore.boolean(Key.YGGDRASIL_ALLOW_INBOUND)
+
+    // the node identity of this install, made on first use and not part of backups
+    val yggdrasilPrivateKey: String
+        get() = persistentToken(Key.YGGDRASIL_PRIVATE_KEY) { Libcore.yggdrasilGenerateKey() }
     var showBottomBar by configurationStore.boolean(Key.SHOW_BOTTOM_BAR)
 
     var allowInsecureOnRequest by configurationStore.boolean(Key.ALLOW_INSECURE_ON_REQUEST)
@@ -188,7 +196,8 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     val shortcutToken get() = persistentToken("shortcutToken")
 
     /** Secrets of this installation: not exported, not restored from another device's backup. */
-    val installSecretKeys = setOf("localProxyPassword", "clashApiSecret", "shortcutToken", "subscriptionHwid")
+    val installSecretKeys =
+        setOf("localProxyPassword", "clashApiSecret", "shortcutToken", "subscriptionHwid", Key.YGGDRASIL_PRIVATE_KEY)
 
     /** Settings whose values must not appear in logs or crash reports. */
     fun isSensitiveKey(key: String) = key in installSecretKeys || key in secretValueKeys ||
@@ -198,9 +207,12 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     private val secretValueKeys = setOf(Key.GLOBAL_CUSTOM_CONFIG, Key.REMOTE_DNS, Key.DIRECT_DNS)
 
     // main and :bg may both start without a token: insert-or-ignore lets the first one win for both
-    private fun persistentToken(key: String): String {
+    private fun persistentToken(
+        key: String,
+        generate: () -> String = { ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) } },
+    ): String {
         configurationStore.getString(key)?.takeIf { it.isNotBlank() }?.let { return it }
-        val token = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
+        val token = generate()
         PublicDatabase.kvPairDao.putIfAbsent(KeyValuePair(key).put(token))
         return configurationStore.getString(key)?.takeIf { it.isNotBlank() } ?: token
     }

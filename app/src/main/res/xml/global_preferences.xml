@@ -238,6 +238,29 @@
             app:title="@string/allow_access" />
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/yggdrasil">
+        <SwitchPreference
+            app:icon="@drawable/ic_baseline_domain_24"
+            app:key="yggdrasilEnabled"
+            app:summary="@string/yggdrasil_summary"
+            app:title="@string/yggdrasil_enable" />
+        <EditTextPreference
+            app:dependency="yggdrasilEnabled"
+            app:dialogMessage="@string/yggdrasil_peers_help"
+            app:key="yggdrasilPeers"
+            app:title="@string/yggdrasil_peers"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreference
+            app:dependency="yggdrasilEnabled"
+            app:key="yggdrasilAllowInbound"
+            app:summary="@string/yggdrasil_allow_inbound_summary"
+            app:title="@string/yggdrasil_allow_inbound" />
+        <Preference
+            app:dependency="yggdrasilEnabled"
+            app:key="yggdrasilAddress"
+            app:title="@string/yggdrasil_address" />
+    </PreferenceCategory>
+
     <PreferenceCategory app:title="@string/cag_misc">
         <io.niko.ui.UrlTestPreference
             app:defaultValue="http://cp.cloudflare.com/"

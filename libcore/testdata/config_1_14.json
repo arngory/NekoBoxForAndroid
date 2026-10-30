@@ -268,6 +268,12 @@
    "i1": "<b 0xc6000000010843290a47ba8ba2ed000044d0e3efd9326adb60561baa3bc4b52471b2d459ddcc9a508dffddc97e4d40d811>",
    "content_padding_addition": "10-100",
    "random_trailers": true
+  },
+  {
+   "type": "yggdrasil",
+   "tag": "ygg-test",
+   "private_key": "abababababababababababababababababababababababababababababababab",
+   "node_info_privacy": true
   }
  ],
  "route": {

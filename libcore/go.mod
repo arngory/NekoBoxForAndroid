@@ -15,13 +15,20 @@ require (
 	golang.org/x/sys v0.47.0
 )
 
+require github.com/yggdrasil-network/yggdrasil-go v0.5.14
+
 require (
+	github.com/Arceliar/ironwood v0.0.0-20260613025018-d50055b11f5e // indirect
+	github.com/Arceliar/phony v0.0.0-20220903101357-530938a4b13d // indirect
 	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/anytls/sing-anytls v0.0.11 // indirect
+	github.com/bits-and-blooms/bitset v1.24.5 // indirect
+	github.com/bits-and-blooms/bloom/v3 v3.7.1 // indirect
 	github.com/caddyserver/certmagic v0.25.3-0.20260421143802-60d9d8b415d6 // indirect
 	github.com/caddyserver/zerossl v0.1.5 // indirect
+	github.com/coder/websocket v1.8.15 // indirect
 	github.com/cretz/bine v0.2.0 // indirect
 	github.com/database64128/netx-go v0.1.1 // indirect
 	github.com/database64128/tfo-go/v2 v2.3.2 // indirect
@@ -35,6 +42,7 @@ require (
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/gofrs/uuid/v5 v5.5.1 // indirect
+	github.com/gologme/log v1.3.0 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
@@ -60,6 +68,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
+	github.com/quic-go/quic-go v0.60.0 // indirect
 	github.com/sagernet/bbolt v0.0.0-20260915102804-500ee1e84832 // indirect
 	github.com/sagernet/cors v1.2.1 // indirect
 	github.com/sagernet/fswatch v0.1.2 // indirect
@@ -114,3 +123,5 @@ replace github.com/sagernet/sing-quic => ../../sing-box/third_party/sing-quic
 replace github.com/sagernet/wireguard-go => ../../sing-box/third_party/wireguard-go
 
 replace masterdnsvpn-go => ../../sing-box/third_party/masterdnsvpn
+
+replace github.com/yggdrasil-network/yggdrasil-go => ../../sing-box/third_party/yggdrasil-go

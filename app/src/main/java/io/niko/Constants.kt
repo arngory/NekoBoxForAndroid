@@ -175,6 +175,11 @@ object Key {
 
     const val APP_TLS_VERSION = "appTLSVersion"
     const val ENABLE_CLASH_API = "enableClashAPI"
+    const val YGGDRASIL_ENABLED = "yggdrasilEnabled"
+    const val YGGDRASIL_PEERS = "yggdrasilPeers"
+    const val YGGDRASIL_PRIVATE_KEY = "yggdrasilPrivateKey"
+    const val YGGDRASIL_ALLOW_INBOUND = "yggdrasilAllowInbound"
+    const val YGGDRASIL_ADDRESS = "yggdrasilAddress"
 }
 
 object TunImplementation {

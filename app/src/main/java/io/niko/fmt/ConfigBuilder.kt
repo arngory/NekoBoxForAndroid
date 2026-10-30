@@ -37,8 +37,9 @@ import io.niko.proxy.shadowtls.buildSingBoxOutboundShadowTLSBean
 import io.niko.utils.JavaUtil.gson
 import io.niko.utils.Util
 import io.niko.utils.listByLineOrComma
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.io.File
+import libcore.Libcore
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 const val TAG_MIXED = "mixed-in"
 
@@ -49,6 +50,10 @@ const val TAG_PROXY = "proxy"
 const val TAG_DIRECT = "direct"
 const val TAG_BYPASS = "bypass"
 const val TAG_BLOCK = "block"
+const val TAG_YGGDRASIL = "yggdrasil"
+
+/** the Yggdrasil address space */
+private val YGGDRASIL_PREFIX = "200::/7"
 
 const val LOCALHOST = "127.0.0.1"
 
@@ -273,6 +278,36 @@ fun buildConfig(
             })
         }
 
+        // Yggdrasil (experimental): the mesh endpoint, 200::/7 through it ahead of user rules
+        val yggdrasil = DataStore.yggdrasilEnabled
+        var yggdrasilAdded = false
+        fun addYggdrasilEndpoint(privateKey: String) {
+            if (yggdrasilAdded) return
+            yggdrasilAdded = true
+            endpoints.add(Outbound().apply {
+                type = "yggdrasil"
+                tag = TAG_YGGDRASIL
+                _hack_config_map["private_key"] = privateKey
+                _hack_config_map["peers"] = DataStore.yggdrasilPeers.lines().map { it.trim() }
+                    .filter { it.isNotEmpty() && !it.startsWith("#") }
+                _hack_config_map["node_info_privacy"] = true
+            })
+        }
+        // other nodes reach this device only when allowed, and then only its own services; it
+        // goes first, above the DNS hijack, or every node would get a resolver
+        var yggdrasilInboundRule: Rule_DefaultOptions? = null
+        if (yggdrasil && !forTest) {
+            addYggdrasilEndpoint(DataStore.yggdrasilPrivateKey)
+            yggdrasilInboundRule = Rule_DefaultOptions().apply {
+                inbound = listOf(TAG_YGGDRASIL)
+                if (DataStore.yggdrasilAllowInbound) outbound = TAG_DIRECT else action = "reject"
+            }
+            route.rules.add(Rule_DefaultOptions().apply {
+                ip_cidr = listOf(YGGDRASIL_PREFIX)
+                outbound = TAG_YGGDRASIL
+            })
+        }
+
         // returns outbound tag
         fun buildChain(
             chainId: Long, entity: ProxyEntity
@@ -493,6 +528,18 @@ fun buildConfig(
                     outbounds.add(knockOutbound)
                 }
 
+                // an entry hop whose server is a Yggdrasil address dials through the mesh
+                if (yggdrasil && index == profileList.lastIndex && knockTag == null &&
+                    !DnsTunnel.of(bean).enabled && !proxyEntity.needExternal() &&
+                    bean.serverAddress.isYggdrasilAddress()
+                ) {
+                    // a latency test runs next to the main node: a node of its own, with a
+                    // one-time key, so two nodes never claim one address
+                    if (forTest) addYggdrasilEndpoint(Libcore.yggdrasilGenerateKey())
+                    currentOutbound._hack_config_map.remove("domain_resolver")
+                    currentOutbound._hack_config_map["detour"] = TAG_YGGDRASIL
+                }
+
                 // DNS tunnel (experimental): the entry hop reaches its server through the core's
                 // dnstt or masterdnsvpn outbound
                 val dnsTunnel = DnsTunnel.of(bean)
@@ -501,6 +548,10 @@ fun buildConfig(
                     dnsTunnel.validate()?.let { throw Exception("${bean.displayName()}: $it") }
                     if (knockTag != null) throw Exception("$prefix: not together with port knocking")
                     if (proxyEntity.needExternal()) throw Exception("$prefix: not supported for plugin profiles")
+                    // the tunnels carry TCP only
+                    if (bean is HysteriaBean || bean is TuicBean || bean is WireGuardBean) {
+                        throw Exception("$prefix: the tunnel carries TCP, this profile type needs UDP")
+                    }
                     if (index != profileList.lastIndex) throw Exception("$prefix: only on the first hop of a chain")
                     val tunnelTag = "$tagOut-dnstunnel"
                     // libcore's protect server runs with the main instance; a latency test without
@@ -853,6 +904,7 @@ fun buildConfig(
                 inbound = if (isVPN) listOf("tun-in", TAG_MIXED) else listOf(TAG_MIXED)
                 action = "sniff"
             })
+            yggdrasilInboundRule?.let { route.rules.add(0, it) }
             if (DataStore.bypassLanInCore) {
                 route.rules.add(Rule_DefaultOptions().apply {
                     outbound = TAG_BYPASS
@@ -911,4 +963,14 @@ fun buildConfig(
         )
     }
 
+}
+
+/** a literal address in 200::/7 */
+fun String.isYggdrasilAddress(): Boolean {
+    val host = trim().removePrefix("[").removeSuffix("]")
+    if (!host.contains(':')) return false
+    val first = host.substringBefore(':').ifEmpty { return false }
+    val value = first.toIntOrNull(16) ?: return false
+    // 200::/7: the first 16 bits are 0x0200-0x03ff
+    return value in 0x200..0x3ff && host.isIpAddress()
 }

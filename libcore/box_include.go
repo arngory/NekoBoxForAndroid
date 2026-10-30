@@ -98,6 +98,7 @@ func nekoboxAndroidEndpointRegistry() *endpoint.Registry {
 	registry := endpoint.NewRegistry()
 
 	wireguard.RegisterEndpoint(registry)
+	registerYggdrasil(registry)
 
 	return registry
 }
