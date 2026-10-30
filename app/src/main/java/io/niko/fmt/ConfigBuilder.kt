@@ -296,6 +296,9 @@ fun buildConfig(
         // other nodes reach this device only when allowed, and then only its own services; it
         // goes first, above the DNS hijack, or every node would get a resolver
         var yggdrasilInboundRule: Rule_DefaultOptions? = null
+        // a hop behind a DNS tunnel may carry no UDP at all (SOCKS, HTTP, SSH, Shadowsocks
+        // without UoT): remote DNS through the proxy then goes over TCP
+        var tunnelledHop = false
         if (yggdrasil && !forTest) {
             addYggdrasilEndpoint(DataStore.yggdrasilPrivateKey)
             yggdrasilInboundRule = Rule_DefaultOptions().apply {
@@ -553,6 +556,7 @@ fun buildConfig(
                         throw Exception("$prefix: the tunnel carries TCP, this profile type needs UDP")
                     }
                     if (index != profileList.lastIndex) throw Exception("$prefix: only on the first hop of a chain")
+                    tunnelledHop = true
                     val tunnelTag = "$tagOut-dnstunnel"
                     // libcore's protect server runs with the main instance; a latency test without
                     // one must not point the tunnel's own sockets at a missing socket
@@ -864,7 +868,15 @@ fun buildConfig(
         if (!forTest) dns.servers.add(DNSServerOptions.fromAddress(
             remoteDns.firstOrNull() ?: throw Exception("No remote DNS, check your settings!"),
             "dns-remote", TAG_PROXY, "dns-direct"
-        ))
+        ).apply {
+            // the same resolver over a TCP transport: UDP, DoQ and DoH3 cannot pass a DNS tunnel
+            if (tunnelledHop) type = when (type) {
+                "udp" -> "tcp"
+                "quic" -> "tls"
+                "h3" -> "https"
+                else -> type
+            }
+        })
 
         // server address lookups go straight to a transport, so they need the direct strategy
         autoDnsDomainStrategy(SingBoxOptionsUtil.domainStrategy("dns-direct"))?.let { strategy ->
