@@ -88,6 +88,7 @@ func nekoboxAndroidOutboundRegistry() *outbound.Registry {
 	hysteria2.RegisterOutbound(registry)
 
 	knock.Register(registry)
+	registerDNSTT(registry)
 
 	return registry
 }

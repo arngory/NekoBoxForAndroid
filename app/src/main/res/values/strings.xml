@@ -613,6 +613,11 @@
     <string name="connection_tweaks">Connection tweaks</string>
     <string name="cert_pins">Certificate pinning</string>
     <string name="cert_pins_hint">SHA-256 of the server public key</string>
+    <string name="dns_tunnel">DNS tunnel (dnstt, experimental)</string>
+    <string name="dns_tunnel_resolver">Resolver: https://…/dns-query, tls://host or udp://host</string>
+    <string name="dns_tunnel_domain">Tunnel domain</string>
+    <string name="dns_tunnel_key">Server public key (64 hex)</string>
+    <string name="dns_tunnel_summary">Reaches the server through DNS queries when only DNS gets out. The dnstt server forwards to one upstream, set this profile up for that upstream (SOCKS, SSH, Shadowsocks…). TCP only, hundreds of kbit/s. Empty domain turns it off.</string>
     <string name="cert_pins_summary">Base64 or hex, one per line. Replaces the CA check, so a self-signed certificate works without "allow insecure". Get it with: openssl x509 -in cert.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64</string>
     <string name="tls_fragment">TLS fragmentation</string>
     <string name="tls_fragment_record">Split into TLS records</string>

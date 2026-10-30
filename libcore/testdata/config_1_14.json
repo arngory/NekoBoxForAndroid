@@ -171,6 +171,20 @@
     "path": "/xh",
     "mode": "auto"
    }
+  },
+  {
+   "type": "dnstt",
+   "tag": "dnstt-test",
+   "domain": "t.example.com",
+   "public_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "resolver": "https://dns.example/dns-query"
+  },
+  {
+   "type": "socks",
+   "tag": "over-dnstt",
+   "server": "127.0.0.1",
+   "server_port": 1080,
+   "detour": "dnstt-test"
   }
  ],
  "endpoints": [

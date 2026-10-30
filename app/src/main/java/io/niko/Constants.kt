@@ -109,6 +109,10 @@ object Key {
     const val SERVER_KNOCK_SILENCE = "serverKnockSilence"
     const val SERVER_TLS_FRAGMENT = "serverTlsFragment"
     const val SERVER_CERT_PINS = "serverCertPins"
+    const val SERVER_DNS_TUNNEL = "serverDnsTunnel"
+    const val SERVER_DNS_TUNNEL_RESOLVER = "serverDnsTunnelResolver"
+    const val SERVER_DNS_TUNNEL_DOMAIN = "serverDnsTunnelDomain"
+    const val SERVER_DNS_TUNNEL_KEY = "serverDnsTunnelKey"
 
     const val SERVER_SECURITY_CATEGORY = "serverSecurityCategory"
     const val SERVER_TLS_CAMOUFLAGE_CATEGORY = "serverTlsCamouflageCategory"

@@ -285,6 +285,10 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var serverKnockSilence by profileCacheStore.stringToInt(Key.SERVER_KNOCK_SILENCE) { 15 }
     var serverTlsFragment by profileCacheStore.stringToInt(Key.SERVER_TLS_FRAGMENT)
     var serverCertPins by profileCacheStore.string(Key.SERVER_CERT_PINS)
+    var serverDnsTunnel by profileCacheStore.string(Key.SERVER_DNS_TUNNEL)
+    var serverDnsTunnelResolver by profileCacheStore.string(Key.SERVER_DNS_TUNNEL_RESOLVER)
+    var serverDnsTunnelDomain by profileCacheStore.string(Key.SERVER_DNS_TUNNEL_DOMAIN)
+    var serverDnsTunnelKey by profileCacheStore.string(Key.SERVER_DNS_TUNNEL_KEY)
 
     var groupName by profileCacheStore.string(Key.GROUP_NAME)
     var groupType by profileCacheStore.stringToInt(Key.GROUP_TYPE)

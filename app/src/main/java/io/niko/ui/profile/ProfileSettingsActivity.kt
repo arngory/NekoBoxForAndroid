@@ -36,6 +36,7 @@ import io.niko.databinding.LayoutConnectionTweaksBinding
 import io.niko.databinding.LayoutGroupItemBinding
 import io.niko.fmt.AbstractBean
 import io.niko.fmt.internal.ChainBean
+import io.niko.fmt.DnsTunnel
 import io.niko.fmt.parseCertificatePins
 import io.niko.fmt.parseKnockSequence
 import io.niko.ktx.*
@@ -177,6 +178,10 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         DataStore.serverKnockSilence = knockSilence
         DataStore.serverTlsFragment = tlsFragment
         DataStore.serverCertPins = certPins
+        DataStore.serverDnsTunnel = dnsTunnel
+        DataStore.serverDnsTunnelResolver = dnsTunnelResolver
+        DataStore.serverDnsTunnelDomain = dnsTunnelDomain
+        DataStore.serverDnsTunnelKey = dnsTunnelKey
     }
 
     private fun AbstractBean.saveConnectionTweaks() {
@@ -186,6 +191,10 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         knockSilence = DataStore.serverKnockSilence
         tlsFragment = DataStore.serverTlsFragment
         certPins = DataStore.serverCertPins
+        dnsTunnel = DataStore.serverDnsTunnel
+        dnsTunnelResolver = DataStore.serverDnsTunnelResolver
+        dnsTunnelDomain = DataStore.serverDnsTunnelDomain
+        dnsTunnelKey = DataStore.serverDnsTunnelKey
     }
 
     fun showConnectionTweaksDialog() {
@@ -202,6 +211,9 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
         binding.knockTtl.setText(DataStore.serverKnockTtl.toString())
         binding.knockSilence.setText(DataStore.serverKnockSilence.toString())
         binding.certPins.setText(DataStore.serverCertPins)
+        binding.dnsTunnelResolver.setText(DataStore.serverDnsTunnelResolver)
+        binding.dnsTunnelDomain.setText(DataStore.serverDnsTunnelDomain)
+        binding.dnsTunnelKey.setText(DataStore.serverDnsTunnelKey)
         val dialog = MaterialAlertDialogBuilder(this).setTitle(R.string.connection_tweaks)
             .setView(binding.root)
             .setPositiveButton(android.R.string.ok, null)
@@ -222,6 +234,20 @@ abstract class ProfileSettingsActivity<T : AbstractBean>(
                 binding.certPins.error = e.message
                 return@setOnClickListener
             }
+            val tunnel = DnsTunnel(
+                resolver = binding.dnsTunnelResolver.text.toString().trim(),
+                domain = binding.dnsTunnelDomain.text.toString().trim(),
+                key = binding.dnsTunnelKey.text.toString().trim(),
+            )
+            val tunnelError = tunnel.validate()
+            if (tunnelError != null) {
+                binding.dnsTunnelDomain.error = tunnelError
+                return@setOnClickListener
+            }
+            DataStore.serverDnsTunnel = if (tunnel.enabled) DnsTunnel.DNSTT else ""
+            DataStore.serverDnsTunnelResolver = tunnel.resolver
+            DataStore.serverDnsTunnelDomain = tunnel.domain
+            DataStore.serverDnsTunnelKey = tunnel.key
             DataStore.serverCertPins = pins.trim()
             DataStore.serverTlsFragment = when (binding.tlsFragment.checkedRadioButtonId) {
                 R.id.tls_fragment_record -> 1

@@ -492,6 +492,25 @@ fun buildConfig(
                     outbounds.add(knockOutbound)
                 }
 
+                // DNS tunnel (experimental): the entry hop reaches its server through the core's
+                // dnstt outbound; the tunnel server forwards to that server, so its address is unused
+                val dnsTunnel = DnsTunnel.of(bean)
+                if (dnsTunnel.enabled) {
+                    val prefix = "DNS tunnel (${bean.displayName()})"
+                    dnsTunnel.validate()?.let { throw Exception("${bean.displayName()}: $it") }
+                    if (knockTag != null) throw Exception("$prefix: not together with port knocking")
+                    if (proxyEntity.needExternal()) throw Exception("$prefix: not supported for plugin profiles")
+                    if (index != profileList.lastIndex) throw Exception("$prefix: only on the first hop of a chain")
+                    val tunnelTag = "$tagOut-dnstt"
+                    outbounds.add(Outbound().apply {
+                        tag = tunnelTag
+                        _hack_config_map.putAll(dnsTunnel.outboundOptions())
+                    })
+                    // the server name is never resolved: dnstt ignores where the hop dials
+                    currentOutbound._hack_config_map.remove("domain_resolver")
+                    currentOutbound._hack_config_map["detour"] = tunnelTag
+                }
+
                 // External proxy need a dokodemo-door inbound to forward the traffic
                 // For external proxy software, their traffic must goes to v2ray-core to use protected fd.
                 bean.finalAddress = bean.serverAddress

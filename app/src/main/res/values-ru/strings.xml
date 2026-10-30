@@ -525,6 +525,11 @@
     <string name="connection_tweaks">Настройки подключения</string>
     <string name="cert_pins">Пиннинг сертификата</string>
     <string name="cert_pins_hint">SHA-256 публичного ключа сервера</string>
+    <string name="dns_tunnel">DNS-туннель (dnstt, экспериментально)</string>
+    <string name="dns_tunnel_resolver">Резолвер: https://…/dns-query, tls://host или udp://host</string>
+    <string name="dns_tunnel_domain">Домен туннеля</string>
+    <string name="dns_tunnel_key">Публичный ключ сервера (64 hex)</string>
+    <string name="dns_tunnel_summary">Доступ к серверу через DNS-запросы, когда наружу проходит только DNS. Сервер dnstt пересылает всё на один upstream — настройте этот профиль под него (SOCKS, SSH, Shadowsocks…). Только TCP, сотни кбит/с. Пустой домен выключает туннель.</string>
     <string name="cert_pins_summary">Base64 или hex, по одному в строке. Заменяет проверку по CA, поэтому самоподписанный сертификат работает без «небезопасного» режима. Получить: openssl x509 -in cert.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64</string>
     <string name="tls_fragment">Фрагментация TLS</string>
     <string name="tls_fragment_record">Разбивать на TLS-записи</string>

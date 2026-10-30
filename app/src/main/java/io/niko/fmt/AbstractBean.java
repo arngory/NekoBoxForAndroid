@@ -33,6 +33,12 @@ public abstract class AbstractBean extends Serializable {
     public Integer tlsFragment;
     // version 4: SHA-256 of the server's public key, base64, one per line
     public String certPins;
+    // version 5: DNS tunnel the profile dials through, "" off or "dnstt"; the tunnel
+    // server forwards to its fixed upstream, which is this profile's server
+    public String dnsTunnel;
+    public String dnsTunnelResolver; // https://host/dns-query, tls://host, udp://host
+    public String dnsTunnelDomain;
+    public String dnsTunnelKey; // the tunnel server's public key
 
     //
     public transient String finalAddress;
@@ -89,6 +95,10 @@ public abstract class AbstractBean extends Serializable {
         if (knockSilence == null) knockSilence = 15;
         if (tlsFragment == null) tlsFragment = 0;
         if (certPins == null) certPins = "";
+        if (dnsTunnel == null) dnsTunnel = "";
+        if (dnsTunnelResolver == null) dnsTunnelResolver = "";
+        if (dnsTunnelDomain == null) dnsTunnelDomain = "";
+        if (dnsTunnelKey == null) dnsTunnelKey = "";
     }
 
 
@@ -98,7 +108,7 @@ public abstract class AbstractBean extends Serializable {
     public void serializeToBuffer(@NonNull ByteBufferOutput output) {
         serialize(output);
 
-        output.writeInt(4);
+        output.writeInt(5);
         if (!serializeWithoutName) {
             output.writeString(name);
         }
@@ -110,6 +120,10 @@ public abstract class AbstractBean extends Serializable {
         output.writeInt(tlsFragment != null ? tlsFragment : 0);
         output.writeInt(knockSilence != null ? knockSilence : 15);
         output.writeString(certPins != null ? certPins : "");
+        output.writeString(dnsTunnel != null ? dnsTunnel : "");
+        output.writeString(dnsTunnelResolver != null ? dnsTunnelResolver : "");
+        output.writeString(dnsTunnelDomain != null ? dnsTunnelDomain : "");
+        output.writeString(dnsTunnelKey != null ? dnsTunnelKey : "");
     }
 
     @Override
@@ -132,6 +146,12 @@ public abstract class AbstractBean extends Serializable {
         }
         if (extraVersion >= 4) {
             certPins = input.readString();
+        }
+        if (extraVersion >= 5) {
+            dnsTunnel = input.readString();
+            dnsTunnelResolver = input.readString();
+            dnsTunnelDomain = input.readString();
+            dnsTunnelKey = input.readString();
         }
     }
 
